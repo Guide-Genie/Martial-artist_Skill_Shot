@@ -13,39 +13,31 @@
     .skill-grid {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
+      gap: 10px;
     }
     .skill {
       width: 80px;
-      height: 100px;
       background-color: #333;
       border: 1px solid #444;
       border-radius: 5px;
       position: relative;
       display: flex;
       align-items: center;
-      justify-content: flex-start;
+      justify-content: center;
       flex-direction: column;
-      padding-top: 5px;
+      padding-bottom: 24px;
     }
     .skill img {
-      width: 56px;
-      height: 56px;
-    }
-    .skill-name {
-      font-size: 11px;
-      margin-top: 4px;
-      text-align: center;
-    }
-    .level-display {
-      font-size: 11px;
-      margin-top: 2px;
+      width: 60px;
+      height: 60px;
     }
     .level-controls {
+      position: absolute;
+      bottom: 0;
       display: flex;
       justify-content: center;
+      width: 100%;
       gap: 2px;
-      margin-top: 2px;
     }
     .level-controls button {
       background: #555;
@@ -56,6 +48,15 @@
       font-size: 12px;
       cursor: pointer;
     }
+    .level-display {
+      font-size: 12px;
+      margin-top: 4px;
+    }
+    .skill-name {
+      font-size: 12px;
+      margin-top: 4px;
+      text-align: center;
+    }
     .restricted {
       color: orange;
     }
@@ -65,6 +66,12 @@
     select {
       padding: 4px 8px;
       font-size: 14px;
+    }
+    #comboResult {
+      margin-top: 20px;
+      padding: 10px;
+      background: #2a2a2a;
+      border-radius: 8px;
     }
   </style>
 </head>
@@ -80,48 +87,159 @@
     </select>
   </div>
 
+  <div class="selector">
+    <label for="grade">사냥터 등급 선택: </label>
+    <select id="grade"></select>
+
+    <label for="monster">몬스터 선택: </label>
+    <select id="monster"></select>
+  </div>
+
   <div class="skill-grid" id="skillGrid"></div>
+  <div id="comboResult"></div>
 
   <script>
-    const skills = [
-      { id: 'magu', name: '마구때리기', race: '포유류', max: 10, img: 'images/magu.png' },
-      { id: 'yangson', name: '양손공격', race: '포유류', max: 4, img: 'images/yangson.png' },
-      { id: 'jiyeol', name: '지열참', race: '포유류', max: 4, img: 'images/jiyeol.png' },
-      { id: 'jjogi', name: '쪼기', race: '조류', max: 4, img: 'images/jjogi.png' },
-      { id: 'maeui', name: '매의위상', race: '조류', max: 4, img: 'images/maeui.png' },
-      { id: 'wind', name: '윈드쉐이커', race: '조류', max: 4, img: 'images/wind.png' },
-      { id: 'tail', name: '꼬리치기', race: '파충류', max: 10, img: 'images/tail.png' },
-      { id: 'claw', name: '할퀴기', race: '파충류', max: 2, img: 'images/claw.png' }
-    ];
+      const skills = [
+  { id: 'magu', name: '마구때리기', race: '포유류', max: 10, img: 'images/magudaeri.png', damage: [52137, 104274, 156411, 208548, 260685, 312822, 364959, 417096, 469233, 521370] },
+  { id: 'yangson', name: '양손공격', race: '포유류', max: 10, img: 'images/yangson.png', damage: [20275, 40550, 60825, 81037, 101294, 121550, 141806, 162062, 182319, 202750] },
+  { id: 'jiyeol', name: '지열참', race: '포유류', max: 10, img: 'images/jiyeol.png', damage: [162206, 324412, 486618, 648824, 811030, 973236, 1135442, 1297648, 1459854, 1622060] },
+  { id: 'jjogi', name: '쪼기', race: '조류', max: 10, img: 'images/jjogi.png', damage: [22488, 44972, 67458, 89942, 112427, 134913, 157399, 179885, 202371, 224857] },
+  { id: 'maeui', name: '매의위상', race: '조류', max: 10, img: 'images/maeui.png', damage: [88269, 176538, 264807, 353076, 441345, 529614, 617883, 706152, 794421, 882690] },
+  { id: 'wind', name: '윈드쉐이커', race: '조류', max: 10, img: 'images/windshaker.png', damage: [123576, 247152, 370728, 494304, 617880, 741456, 865032, 988608, 1112184, 1235760] },
+  { id: 'tail', name: '꼬리치기', race: '파충류', max: 10, img: 'images/tail.png', damage: [240680, 477268, 714579, 950927, 1188237, 1424585, 1661895, 1898725, 2135554, 2371901] },
+  { id: 'claw', name: '할퀴기', race: '파충류', max: 10, img: 'images/claw.png', damage: [102980, 205857, 308736, 411612, 514490, 617368, 720245, 823123, 926001, 1028879] }
+];
+
+const monsterData = {
+  "E": [
+    { name: "슬라임", hp: 1564 },
+    { name: "프로그", hp: 1691 },
+    { name: "터틀", hp: 2002 },
+    { name: "슬러그", hp: 3582 },
+    { name: "바크", hp: 3651 },
+    { name: "풍풍이", hp: 5654 },
+    { name: "촌촌", hp: 6029 },
+    { name: "가스", hp: 7045 },
+    { name: "에스코모이드", hp: 8257 },
+    { name: "오튜", hp: 7966 }
+  ],
+  "D": [
+    { name: "슬라임", hp: 4408 },
+    { name: "프로그", hp: 5086 },
+    { name: "크랩", hp: 5943 },
+    { name: "터틀", hp: 6869 },
+    { name: "리치", hp: 7918 },
+    { name: "슬러그", hp: 8673 },
+    { name: "바크", hp: 11016 },
+    { name: "말미잘", hp: 10736 },
+    { name: "풍풍이", hp: 13034 },
+    { name: "가스", hp: 17734 },
+    { name: "에스코모이드", hp: 21196 },
+    { name: "오튜", hp: 22030 },
+    { name: "크라켄", hp: 26487 }
+  ],
+  "C": [
+    { name: "슬라임", hp: 18186 },
+    { name: "프로그", hp: 18665 },
+    { name: "크랩", hp: 19739 },
+    { name: "터틀", hp: 21700 },
+    { name: "리치", hp: 23102 },
+    { name: "슬러그", hp: 23606 },
+    { name: "바크", hp: 28606 },
+    { name: "말미잘", hp: 30348 },
+    { name: "풍풍이", hp: 32303 },
+    { name: "촌촌", hp: 30648 },
+    { name: "가스", hp: 36681 },
+    { name: "에스코모이드", hp: 39337 },
+    { name: "오튜", hp: 40502 },
+    { name: "크라켄", hp: 42160 }
+  ],
+  "B": [
+    { name: "오튜", hp: 56528 },
+    { name: "에스코모이드", hp: 57299 },
+    { name: "요오다", hp: 58560 },
+    { name: "촌촌", hp: 59299 },
+    { name: "가스", hp: 59494 },
+    { name: "부루마", hp: 62547 },
+    { name: "크라켄", hp: 63491 },
+    { name: "그렘린", hp: 69553 }
+  ],
+  "A": [
+    { name: "촌촌", hp: 176798 },
+    { name: "가스", hp: 273385 },
+    { name: "에스코모이드", hp: 335914 },
+    { name: "오튜", hp: 413594 },
+    { name: "크라켄", hp: 440025 },
+    { name: "그렘린", hp: 451487 },
+    { name: "요오다", hp: 478211 },
+    { name: "부루마", hp: 518903 }
+  ],
+  "S": [
+    { name: "촌촌", hp: 993781 },
+    { name: "검은전갈", hp: 1685782 },
+    { name: "붉은그래브", hp: 2379253 },
+    { name: "붉은터틀", hp: 3090120 },
+    { name: "요오다", hp: 3186410 },
+    { name: "부루마", hp: 3652289 },
+    { name: "그렘린", hp: 4208420 },
+    { name: "붉은말미잘", hp: 4536507 }
+  ],
+  "SS": [
+    { name: "촌촌", hp: 4874967 },
+    { name: "보라전갈", hp: 5979141 },
+    { name: "푸른터틀", hp: 6093503 },
+    { name: "녹빛그래브", hp: 7004127 },
+    { name: "붉은말미잘", hp: 7542848 },
+    { name: "부루마", hp: 8119564 },
+    { name: "블루푸아", hp: 9042696 },
+    { name: "어두운말미잘", hp: 9584672 }
+  ]
+};
+    const cooldowns = {
+      jiyeol: 34, tail: 28, wind: 22, maeui: 16,
+      claw: 12, magu: 10, yangson: 4, jjogi: 4
+    };
+    const isRepeatable = ['yangson', 'jjogi'];
 
     const raceLimits = {
-      '포유류': {
-        '포유류': 10,
-        '조류': 4,
-        '파충류': 2
-      },
-      '조류': {
-        '포유류': 4,
-        '조류': 10,
-        '파충류': 2
-      },
-      '파충류': {
-        '포유류': 4,
-        '조류': 4,
-        '파충류': 10
-      }
+      '포유류': { '포유류': 10, '조류': 4, '파충류': 2 },
+      '조류': { '포유류': 4, '조류': 10, '파충류': 2 },
+      '파충류': { '포유류': 4, '조류': 4, '파충류': 10 }
     };
 
     let selectedRace = '포유류';
+    let selectedLevels = {};
+    let selectedMonsterHp = 0;
 
     document.getElementById('race').addEventListener('change', e => {
       selectedRace = e.target.value;
       renderSkills();
+      if (selectedMonsterHp > 0) calculateAndShowCombo(selectedMonsterHp, selectedLevels);
+    });
+
+    document.getElementById('grade').addEventListener('change', e => {
+      const mons = monsterData[e.target.value];
+      const monsterSelect = document.getElementById('monster');
+      monsterSelect.innerHTML = '';
+      mons.forEach(mon => {
+        const opt = document.createElement('option');
+        opt.value = mon.hp;
+        opt.innerText = mon.name;
+        monsterSelect.appendChild(opt);
+      });
+      selectedMonsterHp = parseInt(monsterSelect.value);
+      calculateAndShowCombo(selectedMonsterHp, selectedLevels);
+    });
+
+    document.getElementById('monster').addEventListener('change', e => {
+      selectedMonsterHp = parseInt(e.target.value);
+      calculateAndShowCombo(selectedMonsterHp, selectedLevels);
     });
 
     function renderSkills() {
       const skillGrid = document.getElementById('skillGrid');
       skillGrid.innerHTML = '';
+      selectedLevels = {};
 
       skills.forEach(skill => {
         const container = document.createElement('div');
@@ -132,17 +250,18 @@
         img.src = skill.img;
         img.alt = skill.name;
 
-        const nameTag = document.createElement('div');
-        nameTag.className = 'skill-name';
-        nameTag.innerText = skill.name;
+        const label = document.createElement('div');
+        label.className = 'skill-name';
+        label.innerText = skill.name;
 
         const levelDisplay = document.createElement('div');
         levelDisplay.className = 'level-display';
-        let currentLevel = 0;
-
+        let cur = 0;
         const maxLevel = raceLimits[selectedRace][skill.race];
         if (skill.race !== selectedRace) levelDisplay.classList.add('restricted');
-        levelDisplay.innerText = `${currentLevel}/${maxLevel}`;
+        levelDisplay.innerText = `${cur}/${maxLevel}`;
+
+        selectedLevels[skill.id] = cur;
 
         const controls = document.createElement('div');
         controls.className = 'level-controls';
@@ -150,34 +269,104 @@
         const minus = document.createElement('button');
         minus.innerText = '-';
         minus.onclick = () => {
-          let cur = parseInt(levelDisplay.innerText.split('/')[0]);
           if (cur > 0) {
             cur--;
+            selectedLevels[skill.id] = cur;
             levelDisplay.innerText = `${cur}/${maxLevel}`;
+            if (selectedMonsterHp > 0) calculateAndShowCombo(selectedMonsterHp, selectedLevels);
           }
         };
 
         const plus = document.createElement('button');
         plus.innerText = '+';
         plus.onclick = () => {
-          let cur = parseInt(levelDisplay.innerText.split('/')[0]);
           if (cur < maxLevel) {
             cur++;
+            selectedLevels[skill.id] = cur;
             levelDisplay.innerText = `${cur}/${maxLevel}`;
+            if (selectedMonsterHp > 0) calculateAndShowCombo(selectedMonsterHp, selectedLevels);
           }
         };
 
         controls.appendChild(minus);
         controls.appendChild(plus);
+
         container.appendChild(img);
-        container.appendChild(nameTag);
+        container.appendChild(label);
         container.appendChild(levelDisplay);
         container.appendChild(controls);
-
         skillGrid.appendChild(container);
       });
     }
 
+    function getAvailableSkills(exclude, levels) {
+      return skills
+        .filter(s => levels[s.id] > 0 && (!exclude.has(s.id) || isRepeatable.includes(s.id)))
+        .map(s => ({ id: s.id, name: s.name, dmg: s.damage[levels[s.id] - 1], repeatable: isRepeatable.includes(s.id) }))
+        .sort((a, b) => b.dmg - a.dmg);
+    }
+
+    function findShotCombos(monsterHp, levels) {
+      const results = [];
+      const used = new Set();
+      let remainingHp = monsterHp;
+
+      while (remainingHp > 0) {
+        const combo = [];
+        const usedThis = new Set();
+        const candidates = getAvailableSkills(used, levels);
+        let total = 0;
+
+        for (let skill of candidates) {
+          if (total >= remainingHp) break;
+          combo.push(skill);
+          total += skill.dmg;
+          if (!skill.repeatable) usedThis.add(skill.id);
+        }
+
+        if (combo.length === 0) break;
+
+        results.push({
+          skills: combo,
+          total,
+          remaining: Math.max(remainingHp - total, 0)
+        });
+
+        remainingHp -= total;
+        for (let id of usedThis) used.add(id);
+      }
+
+      return results;
+    }
+
+    function calculateAndShowCombo(monsterHp, levels) {
+      const combos = findShotCombos(monsterHp, levels);
+      const resultDiv = document.getElementById('comboResult');
+      resultDiv.innerHTML = '';
+
+      combos.forEach((combo, idx) => {
+        const skillsText = combo.skills.map(s => `${s.name}(${s.dmg})`).join(' + ');
+        const line = document.createElement('div');
+        line.innerText = `샷 ${idx + 1}: ${skillsText} = 총 ${combo.total} 데미지, 남은 HP: ${combo.remaining}`;
+        resultDiv.appendChild(line);
+      });
+
+      if (combos.length === 0) {
+        resultDiv.innerText = '사용 가능한 스킬로 조합을 만들 수 없습니다.';
+      }
+    }
+
+    function populateMonsterDropdown() {
+      const gradeSelect = document.getElementById('grade');
+      for (let grade in monsterData) {
+        const opt = document.createElement('option');
+        opt.value = grade;
+        opt.innerText = grade + '등급';
+        gradeSelect.appendChild(opt);
+      }
+    }
+
+    populateMonsterDropdown();
     renderSkills();
   </script>
 </body>
