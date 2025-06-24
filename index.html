@@ -10,21 +10,15 @@
       font-family: 'Noto Sans KR', sans-serif;
       padding: 20px;
     }
-    h1 {
-      font-size: 24px;
-      color: #ffcc00;
-    }
-    .selector {
-      margin-bottom: 10px;
+    h1 { font-size: 24px; margin-bottom: 20px; }
+    .selectors {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
     }
     select {
-      padding: 4px 8px;
+      padding: 5px 10px;
       font-size: 14px;
-    }
-    #monsterHPDisplay {
-      margin: 10px 0;
-      font-size: 16px;
-      color: #ffcc00;
     }
     .skill-grid {
       display: flex;
@@ -33,64 +27,82 @@
       margin-bottom: 20px;
     }
     .skill {
-      width: 80px;
+      width: 90px;
       background-color: #333;
-      border: 1px solid #555;
-      border-radius: 8px;
-      padding: 6px;
+      border: 1px solid #444;
+      border-radius: 6px;
       display: flex;
       flex-direction: column;
       align-items: center;
+      padding: 6px;
     }
     .skill img {
       width: 48px;
       height: 48px;
     }
-    .skill-name {
-      font-size: 12px;
-      text-align: center;
-      margin-top: 4px;
-    }
-    .level-display {
-      font-size: 12px;
-      margin: 2px 0;
-      white-space: pre-line;
-      text-align: center;
-    }
     .level-controls {
       display: flex;
       justify-content: center;
-      gap: 4px;
+      gap: 5px;
     }
     .level-controls button {
+      background: #555;
+      color: #fff;
+      border: none;
       width: 24px;
       height: 24px;
       font-size: 14px;
-      background-color: #666;
-      color: white;
-      border: none;
-      border-radius: 4px;
       cursor: pointer;
+      border-radius: 3px;
+    }
+    .level-display {
+      font-size: 12px;
+      margin: 4px 0;
+    }
+    .skill-name {
+      font-size: 11px;
+      text-align: center;
+      margin-top: 4px;
+    }
+    .restricted {
+      color: orange;
+    }
+    #monsterHPDisplay {
+      margin: 10px 0;
+      font-size: 16px;
+      color: #ffcc00;
     }
     #resultArea {
       font-size: 14px;
+      margin-top: 10px;
+      white-space: pre-wrap;
     }
   </style>
 </head>
 <body>
   <h1>🧱 무도가 스킬 시뮬레이터</h1>
-  <div class="selector">
-    <label for="grade">등급 선택:</label>
+
+  <div class="selectors">
+    <label for="race">종족 선택: </label>
+    <select id="race">
+      <option value="포유류">포유류</option>
+      <option value="조류">조류</option>
+      <option value="파충류">파충류</option>
+    </select>
+
+    <label for="grade">사냥터 등급: </label>
     <select id="grade"></select>
-    <label for="monster">몬스터 선택:</label>
+
+    <label for="monster">몬스터 선택: </label>
     <select id="monster"></select>
   </div>
+
   <div id="monsterHPDisplay"></div>
   <div class="skill-grid" id="skillGrid"></div>
   <div id="resultArea"></div>
 
   <script>
-            const skills = [
+        const skills = [
   { id: 'magu', name: '마구때리기', race: '포유류', max: 10, img: 'images/magu.png', damage: [52137, 104274, 156411, 208548, 260685, 312822, 364959, 417096, 469233, 521370] },
   { id: 'yangson', name: '양손공격', race: '포유류', max: 10, img: 'images/yangson.png', damage: [20275, 40550, 60825, 81037, 101294, 121550, 141806, 162062, 182319, 202750] },
   { id: 'jiyeol', name: '지열참', race: '포유류', max: 10, img: 'images/jiyeol.png', damage: [162206, 324412, 486618, 648824, 811030, 973236, 1135442, 1297648, 1459854, 1622060] },
@@ -100,174 +112,177 @@
   { id: 'tail', name: '꼬리치기', race: '파충류', max: 10, img: 'images/tail.png', damage: [240680, 477268, 714579, 950927, 1188237, 1424585, 1661895, 1898725, 2135554, 2371901] },
   { id: 'claw', name: '할퀴기', race: '파충류', max: 10, img: 'images/claw.png', damage: [102980, 205857, 308736, 411612, 514490, 617368, 720245, 823123, 926001, 1028879] }
 ];
-    const monsterData = {
-      "A": [
-        { name: "촌촌", hp: 176798 },
-        { name: "가스", hp: 273385 },
-        { name: "에스코모이드", hp: 335914 },
-        { name: "오튜", hp: 413594 },
-        { name: "크라켄", hp: 440025 },
-        { name: "그렘린", hp: 451487 },
-        { name: "요오다", hp: 478211 },
-        { name: "부루마", hp: 518903 }
-      ],
-      "S": [
-        { name: "촌촌", hp: 993781 },
-        { name: "검은전갈", hp: 1685782 },
-        { name: "붉은그래브", hp: 2379253 },
-        { name: "붉은터틀", hp: 3090120 },
-        { name: "요오다", hp: 3186410 },
-        { name: "부루마", hp: 3652289 },
-        { name: "그렘린", hp: 4208420 },
-        { name: "붉은말미잘", hp: 4536507 }
-      ],
-      "SS": [
-        { name: "촌촌", hp: 4874967 },
-        { name: "보라전갈", hp: 5979141 },
-        { name: "푸른터틀", hp: 6093503 },
-        { name: "녹빛그래브", hp: 7004127 },
-        { name: "붉은말미잘", hp: 7542848 },
-        { name: "부루마", hp: 8119564 },
-        { name: "블루푸아", hp: 9042696 },
-        { name: "어두운말미잘", hp: 9584672 }
-      ]
+
+const monsterData = {
+  "A": [
+    { name: "촌촌", hp: 176798 },
+    { name: "가스", hp: 273385 },
+    { name: "에스코모이드", hp: 335914 },
+    { name: "오튜", hp: 413594 },
+    { name: "크라켄", hp: 440025 },
+    { name: "그렘린", hp: 451487 },
+    { name: "요오다", hp: 478211 },
+    { name: "부루마", hp: 518903 }
+  ],
+  "S": [
+    { name: "촌촌", hp: 993781 },
+    { name: "검은전갈", hp: 1685782 },
+    { name: "붉은그래브", hp: 2379253 },
+    { name: "붉은터틀", hp: 3090120 },
+    { name: "요오다", hp: 3186410 },
+    { name: "부루마", hp: 3652289 },
+    { name: "그렘린", hp: 4208420 },
+    { name: "붉은말미잘", hp: 4536507 }
+  ],
+  "SS": [
+    { name: "촌촌", hp: 4874967 },
+    { name: "보라전갈", hp: 5979141 },
+    { name: "푸른터틀", hp: 6093503 },
+    { name: "녹빛그래브", hp: 7004127 },
+    { name: "붉은말미잘", hp: 7542848 },
+    { name: "부루마", hp: 8119564 },
+    { name: "블루푸아", hp: 9042696 },
+    { name: "어두운말미잘", hp: 9584672 }
+  ]
+};
+
+    const raceLimits = {
+      '포유류': { '포유류': 10, '조류': 4, '파충류': 2 },
+      '조류': { '포유류': 4, '조류': 10, '파충류': 2 },
+      '파충류': { '포유류': 4, '조류': 4, '파충류': 10 }
     };
 
+    let selectedRace = localStorage.getItem('selectedRace') || '포유류';
+    let currentLevels = JSON.parse(localStorage.getItem('skillLevels') || '{}');
     let selectedMonster = null;
-    let currentLevels = JSON.parse(localStorage.getItem("skillLevels") || "{}");
 
-    function updateSelectors() {
-      const gradeSel = document.getElementById("grade");
-      const monsterSel = document.getElementById("monster");
-      gradeSel.innerHTML = Object.keys(monsterData).map(g => `<option>${g}</option>`).join("");
-      gradeSel.value = Object.keys(monsterData)[0];
-      updateMonsters();
-    }
-
-    function updateMonsters() {
-      const grade = document.getElementById("grade").value;
-      const monsters = monsterData[grade] || [];
-      const monsterSel = document.getElementById("monster");
-      monsterSel.innerHTML = monsters.map(m => `<option>${m.name}</option>`).join("");
-      monsterSel.value = monsters[0].name;
+    function updateMonsterSelector() {
+      const grade = document.getElementById('grade').value;
+      const monsterSelect = document.getElementById('monster');
+      monsterSelect.innerHTML = '';
+      (monsterData[grade] || []).sort((a, b) => a.hp - b.hp).forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.name;
+        opt.text = m.name;
+        monsterSelect.appendChild(opt);
+      });
       updateSelectedMonster();
     }
 
     function updateSelectedMonster() {
-      const grade = document.getElementById("grade").value;
-      const name = document.getElementById("monster").value;
-      selectedMonster = monsterData[grade].find(m => m.name === name);
-      document.getElementById("monsterHPDisplay").innerText = `📌 몬스터 체력: ${selectedMonster.hp.toLocaleString()} HP`;
+      const grade = document.getElementById('grade').value;
+      const name = document.getElementById('monster').value;
+      selectedMonster = (monsterData[grade] || []).find(m => m.name === name);
+      document.getElementById('monsterHPDisplay').innerText = `📌 몬스터 체력: ${selectedMonster?.hp.toLocaleString()} HP`;
+      renderSkills();
       calculateShots();
     }
 
     function renderSkills() {
-      const grid = document.getElementById("skillGrid");
-      grid.innerHTML = "";
+      const grid = document.getElementById('skillGrid');
+      grid.innerHTML = '';
       skills.forEach(skill => {
-        const box = document.createElement("div");
-        box.className = "skill";
-
-        const img = document.createElement("img");
-        img.src = skill.img;
-        box.appendChild(img);
-
-        const name = document.createElement("div");
-        name.className = "skill-name";
-        name.innerText = skill.name;
-        box.appendChild(name);
-
+        const max = raceLimits[selectedRace][skill.race];
         const level = currentLevels[skill.id] || 0;
         const damage = skill.damage[level - 1] || 0;
 
-        const display = document.createElement("div");
-        display.className = "level-display";
-        display.innerText = `${level}/${skill.max}\n${damage.toLocaleString()}\n데미지`;
-        box.appendChild(display);
+        const div = document.createElement('div');
+        div.className = 'skill';
 
-        const controls = document.createElement("div");
-        controls.className = "level-controls";
+        const img = document.createElement('img');
+        img.src = skill.img;
+        div.appendChild(img);
 
-        const minus = document.createElement("button");
-        minus.innerText = "-";
-        minus.onclick = () => {
-          if (currentLevels[skill.id] > 0) {
-            currentLevels[skill.id]--;
-            localStorage.setItem("skillLevels", JSON.stringify(currentLevels));
+        const name = document.createElement('div');
+        name.className = 'skill-name';
+        name.innerText = skill.name;
+        div.appendChild(name);
+
+        const lvlDisplay = document.createElement('div');
+        lvlDisplay.className = 'level-display';
+        if (skill.race !== selectedRace) lvlDisplay.classList.add('restricted');
+        lvlDisplay.innerText = `${level}/${max}`;
+        div.appendChild(lvlDisplay);
+
+        const dmg = document.createElement('div');
+        dmg.className = 'level-display';
+        dmg.innerText = `\n${damage.toLocaleString()} 데미지`;
+        div.appendChild(dmg);
+
+        const controls = document.createElement('div');
+        controls.className = 'level-controls';
+        ['-', '+'].forEach(op => {
+          const btn = document.createElement('button');
+          btn.innerText = op;
+          btn.onclick = () => {
+            if (op === '+' && level < max) currentLevels[skill.id] = level + 1;
+            if (op === '-' && level > 0) currentLevels[skill.id] = level - 1;
+            localStorage.setItem('skillLevels', JSON.stringify(currentLevels));
             renderSkills();
             calculateShots();
-          }
-        };
-
-        const plus = document.createElement("button");
-        plus.innerText = "+";
-        plus.onclick = () => {
-          if (currentLevels[skill.id] < skill.max) {
-            currentLevels[skill.id] = (currentLevels[skill.id] || 0) + 1;
-            localStorage.setItem("skillLevels", JSON.stringify(currentLevels));
-            renderSkills();
-            calculateShots();
-          }
-        };
-
-        controls.appendChild(minus);
-        controls.appendChild(plus);
-        box.appendChild(controls);
-
-        grid.appendChild(box);
+          };
+          controls.appendChild(btn);
+        });
+        div.appendChild(controls);
+        grid.appendChild(div);
       });
     }
 
     function calculateShots() {
-      const resultArea = document.getElementById("resultArea");
+      const result = document.getElementById('resultArea');
+      result.innerHTML = '';
       if (!selectedMonster) return;
 
-      let remainingHP = selectedMonster.hp;
-      const usable = skills.map(s => {
-        const level = currentLevels[s.id] || 0;
-        return level > 0 ? {
-          id: s.id,
-          name: s.name,
-          damage: s.damage[level - 1],
-          cooldown: s.cooldown || 0
-        } : null;
-      }).filter(Boolean);
+      const allSkills = skills
+        .map(s => {
+          const lvl = currentLevels[s.id] || 0;
+          return { ...s, level: lvl, damage: s.damage[lvl - 1] || 0 };
+        })
+        .filter(s => s.level > 0);
 
-      const reusable = ["양손공격", "쪼기"];
-      const output = [];
-      let shot = 1;
+      const reusable = ['양손공격', '쪼기'];
+      const used = [];
+      let hp = selectedMonster.hp;
+      let shots = [];
+      let shotNum = 1;
 
-      while (remainingHP > 0 && usable.length > 0) {
+      while (hp > 0) {
+        let combo = [];
         let total = 0;
-        const used = [];
 
-        for (const s of usable) {
-          if (reusable.includes(s.name) || !used.includes(s.name)) {
-            if (total + s.damage <= remainingHP || total === 0) {
-              total += s.damage;
-              used.push(s.name);
-              if (!reusable.includes(s.name)) usable.splice(usable.findIndex(x => x.id === s.id), 1);
-              if (total >= remainingHP) break;
-            }
-          }
+        for (let i = 0; i < allSkills.length; i++) {
+          const skill = allSkills[i];
+          if (used.includes(skill.id) && !reusable.includes(skill.name)) continue;
+          if (total + skill.damage > hp && !reusable.includes(skill.name)) continue;
+
+          combo.push(skill);
+          total += skill.damage;
+          if (!reusable.includes(skill.name)) used.push(skill.id);
+          if (total >= hp) break;
         }
 
-        output.push(`샷 ${shot++}: ${used.join(' + ')} = ${total.toLocaleString()} 데미지, 남은 HP: ${Math.max(0, remainingHP - total).toLocaleString()}`);
-        remainingHP -= total;
+        shots.push(`샷 ${shotNum++}: ` + combo.map(s => `${s.name}(${s.damage.toLocaleString()})`).join(' + ') + ` = 총 ${total.toLocaleString()} 데미지`);
+        hp -= total;
+        if (combo.length === 0) break;
       }
 
-      if (remainingHP > 0) {
-        output.push(`🩸 남은 체력: ${remainingHP.toLocaleString()} — 스킬 부족`);
-      }
-
-      resultArea.innerHTML = output.map(line => `<div>${line}</div>`).join('');
+      if (hp > 0) shots.push(`🩸 남은 체력: ${hp.toLocaleString()} — 스킬 부족`);
+      result.innerText = shots.join('\n');
     }
 
-    document.getElementById("grade").addEventListener("change", updateMonsters);
-    document.getElementById("monster").addEventListener("change", updateSelectedMonster);
-    window.onload = () => {
-      updateSelectors();
+    document.getElementById('grade').addEventListener('change', updateMonsterSelector);
+    document.getElementById('monster').addEventListener('change', updateSelectedMonster);
+    document.getElementById('race').addEventListener('change', () => {
+      selectedRace = document.getElementById('race').value;
+      localStorage.setItem('selectedRace', selectedRace);
       renderSkills();
+      calculateShots();
+    });
+
+    window.onload = () => {
+      document.getElementById('race').value = selectedRace;
+      document.getElementById('grade').innerHTML = Object.keys(monsterData).map(g => `<option>${g}</option>`).join('');
+      updateMonsterSelector();
     };
   </script>
 </body>
