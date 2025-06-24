@@ -13,43 +13,45 @@
     .skill-grid {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 12px;
       margin-bottom: 20px;
     }
     .skill {
-      width: 72px;
-      background-color: #333;
-      border: 1px solid #444;
-      border-radius: 5px;
+      width: 100px;
+      background-color: #2b2b2b;
+      border: 1px solid #555;
+      border-radius: 8px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 5px;
+      padding: 8px;
     }
     .skill img {
-      width: 48px;
-      height: 48px;
+      width: 64px;
+      height: 64px;
     }
     .level-controls {
       display: flex;
       justify-content: center;
-      gap: 2px;
+      gap: 4px;
     }
     .level-controls button {
-      background: #555;
+      background: #777;
       color: #fff;
       border: none;
-      width: 20px;
-      height: 20px;
-      font-size: 12px;
+      width: 24px;
+      height: 24px;
+      font-size: 14px;
       cursor: pointer;
+      border-radius: 4px;
     }
     .level-display {
-      font-size: 12px;
-      margin: 2px 0;
+      font-size: 13px;
+      margin: 4px 0;
+      text-align: center;
     }
     .skill-name {
-      font-size: 10px;
+      font-size: 12px;
       text-align: center;
     }
     .restricted {
@@ -59,16 +61,17 @@
       margin-bottom: 10px;
     }
     select {
-      padding: 4px 8px;
+      padding: 6px 10px;
       font-size: 14px;
     }
     #resultArea {
       margin-top: 20px;
-      font-size: 14px;
+      font-size: 15px;
+      line-height: 1.6;
     }
     #monsterHPDisplay {
       margin-top: 10px;
-      font-size: 16px;
+      font-size: 18px;
       color: #ffcc00;
     }
   </style>
@@ -77,16 +80,8 @@
   <h1>🧱 무도가 스킬 시뮬레이터</h1>
 
   <div class="selector">
-    <label for="race">내 종족 선택: </label>
-    <select id="race">
-      <option value="포유류">포유류</option>
-      <option value="조류">조류</option>
-      <option value="파충류">파충류</option>
-    </select>
-
     <label for="grade">사냥터 등급 선택: </label>
     <select id="grade"></select>
-
     <label for="monster">몬스터 선택: </label>
     <select id="monster"></select>
   </div>
@@ -98,7 +93,7 @@
   <div id="resultArea"></div>
 
   <script>
-        const skills = [
+  const skills = [
   { id: 'magu', name: '마구때리기', race: '포유류', max: 10, img: 'images/magu.png', damage: [52137, 104274, 156411, 208548, 260685, 312822, 364959, 417096, 469233, 521370] },
   { id: 'yangson', name: '양손공격', race: '포유류', max: 10, img: 'images/yangson.png', damage: [20275, 40550, 60825, 81037, 101294, 121550, 141806, 162062, 182319, 202750] },
   { id: 'jiyeol', name: '지열참', race: '포유류', max: 10, img: 'images/jiyeol.png', damage: [162206, 324412, 486618, 648824, 811030, 973236, 1135442, 1297648, 1459854, 1622060] },
@@ -194,6 +189,7 @@ const monsterData = {
     { name: "어두운말미잘", hp: 9584672 }
   ]
 };
+
     const raceLimits = {
       '포유류': { '포유류': 10, '조류': 4, '파충류': 2 },
       '조류': { '포유류': 4, '조류': 10, '파충류': 2 },
@@ -257,7 +253,7 @@ const monsterData = {
         const damage = skill.damage[level - 1] || 0;
         const dmgText = document.createElement('div');
         dmgText.className = 'level-display';
-        dmgText.innerText = `${damage.toLocaleString()} 데미지`;
+        dmgText.innerHTML = `데미지<br>${damage.toLocaleString()}`;
         skillBox.appendChild(dmgText);
 
         const controls = document.createElement('div');
@@ -266,7 +262,6 @@ const monsterData = {
         const minus = document.createElement('button');
         minus.innerText = '-';
         minus.onclick = () => {
-          currentLevels[skill.id] = currentLevels[skill.id] || 0;
           if (currentLevels[skill.id] > 0) {
             currentLevels[skill.id]--;
             renderSkills();
@@ -277,9 +272,8 @@ const monsterData = {
         const plus = document.createElement('button');
         plus.innerText = '+';
         plus.onclick = () => {
-          currentLevels[skill.id] = currentLevels[skill.id] || 0;
           if (currentLevels[skill.id] < max) {
-            currentLevels[skill.id]++;
+            currentLevels[skill.id] = (currentLevels[skill.id] || 0) + 1;
             renderSkills();
             calculateShots();
           }
@@ -297,43 +291,41 @@ const monsterData = {
       const resultArea = document.getElementById('resultArea');
       if (!selectedMonster) return;
 
-      const skillsByDmg = skills.map(s => {
+      const available = skills.map(s => {
         const level = currentLevels[s.id] || 0;
         return {
           id: s.id,
           name: s.name,
           damage: s.damage[level - 1] || 0,
-          level,
-          cooldown: s.cooldown || 9999
+          level
         };
       }).filter(s => s.level > 0);
 
       const reusable = ['양손공격', '쪼기'];
-      let queue = [...skillsByDmg];
-      const output = [];
       let remainingHP = selectedMonster.hp;
-      let shotCount = 1;
+      let combos = [];
+      let used = new Set();
 
-      while (remainingHP > 0 && queue.length > 0) {
+      while (remainingHP > 0 && available.length > 0) {
         let combo = [];
         let total = 0;
-
-        for (let i = 0; i < queue.length; i++) {
-          const skill = queue[i];
+        for (let skill of available) {
+          if (used.has(skill.id) && !reusable.includes(skill.name)) continue;
           if (total + skill.damage <= remainingHP || reusable.includes(skill.name)) {
             combo.push(skill);
             total += skill.damage;
+            used.add(skill.id);
           }
+          if (total >= remainingHP) break;
         }
-
-        output.push(`샷 ${shotCount++}: ${combo.map(s => `${s.name}(${s.damage.toLocaleString()})`).join(' + ')} = 총 ${total.toLocaleString()} 데미지, 남은 HP: ${Math.max(remainingHP - total, 0).toLocaleString()}`);
+        combos.push({ combo, total });
         remainingHP -= total;
-
-        queue = [];
-        combo.forEach(skill => {
-          if (reusable.includes(skill.name)) queue.push(skill);
-        });
       }
+
+      const output = combos.map((c, i) => {
+        const names = c.combo.map(s => `${s.name}(${s.damage.toLocaleString()})`).join(' + ');
+        return `샷 ${i + 1}: ${names} = 총 ${c.total.toLocaleString()} 데미지, 남은 HP: ${Math.max(selectedMonster.hp - combos.slice(0, i + 1).reduce((a, b) => a + b.total, 0), 0).toLocaleString()}`;
+      });
 
       if (remainingHP > 0) {
         output.push(`🩸 아직 남은 HP: ${remainingHP.toLocaleString()} — 스킬 부족`);
@@ -341,12 +333,6 @@ const monsterData = {
 
       resultArea.innerHTML = output.map(line => `<div>${line}</div>`).join('');
     }
-
-    document.getElementById('race').addEventListener('change', () => {
-      selectedRace = document.getElementById('race').value;
-      renderSkills();
-      calculateShots();
-    });
 
     document.getElementById('grade').addEventListener('change', updateMonsterSelector);
     document.getElementById('monster').addEventListener('change', updateSelectedMonster);
