@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>무도가 스킬 시뮬레이터</title>
   <style>
     body {
@@ -13,30 +13,31 @@
     .skill-grid {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
+      gap: 10px;
       margin-bottom: 20px;
     }
     .skill {
       width: 100px;
-      background-color: #2b2b2b;
-      border: 1px solid #555;
+      background-color: #2e2e2e;
       border-radius: 8px;
+      padding: 8px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 8px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
     }
     .skill img {
-      width: 64px;
-      height: 64px;
+      width: 48px;
+      height: 48px;
     }
     .level-controls {
       display: flex;
       justify-content: center;
-      gap: 4px;
+      gap: 5px;
+      margin-top: 4px;
     }
     .level-controls button {
-      background: #777;
+      background: #666;
       color: #fff;
       border: none;
       width: 24px;
@@ -47,12 +48,13 @@
     }
     .level-display {
       font-size: 13px;
-      margin: 4px 0;
-      text-align: center;
+      margin-top: 2px;
+      white-space: nowrap;
     }
     .skill-name {
       font-size: 12px;
       text-align: center;
+      margin-top: 6px;
     }
     .restricted {
       color: orange;
@@ -61,17 +63,16 @@
       margin-bottom: 10px;
     }
     select {
-      padding: 6px 10px;
+      padding: 4px 8px;
       font-size: 14px;
     }
     #resultArea {
       margin-top: 20px;
       font-size: 15px;
-      line-height: 1.6;
     }
     #monsterHPDisplay {
       margin-top: 10px;
-      font-size: 18px;
+      font-size: 16px;
       color: #ffcc00;
     }
   </style>
@@ -93,7 +94,7 @@
   <div id="resultArea"></div>
 
   <script>
-  const skills = [
+         const skills = [
   { id: 'magu', name: '마구때리기', race: '포유류', max: 10, img: 'images/magu.png', damage: [52137, 104274, 156411, 208548, 260685, 312822, 364959, 417096, 469233, 521370] },
   { id: 'yangson', name: '양손공격', race: '포유류', max: 10, img: 'images/yangson.png', damage: [20275, 40550, 60825, 81037, 101294, 121550, 141806, 162062, 182319, 202750] },
   { id: 'jiyeol', name: '지열참', race: '포유류', max: 10, img: 'images/jiyeol.png', damage: [162206, 324412, 486618, 648824, 811030, 973236, 1135442, 1297648, 1459854, 1622060] },
@@ -197,7 +198,7 @@ const monsterData = {
     };
 
     let selectedRace = '포유류';
-    let currentLevels = {};
+    let currentLevels = JSON.parse(localStorage.getItem('skillLevels') || '{}');
     let selectedMonster = null;
 
     function updateMonsterSelector() {
@@ -264,6 +265,7 @@ const monsterData = {
         minus.onclick = () => {
           if (currentLevels[skill.id] > 0) {
             currentLevels[skill.id]--;
+            persistLevels();
             renderSkills();
             calculateShots();
           }
@@ -274,6 +276,7 @@ const monsterData = {
         plus.onclick = () => {
           if (currentLevels[skill.id] < max) {
             currentLevels[skill.id] = (currentLevels[skill.id] || 0) + 1;
+            persistLevels();
             renderSkills();
             calculateShots();
           }
@@ -287,45 +290,51 @@ const monsterData = {
       });
     }
 
+    function persistLevels() {
+      localStorage.setItem('skillLevels', JSON.stringify(currentLevels));
+    }
+
     function calculateShots() {
       const resultArea = document.getElementById('resultArea');
       if (!selectedMonster) return;
 
-      const available = skills.map(s => {
+      const skillsByDmg = skills.map(s => {
         const level = currentLevels[s.id] || 0;
         return {
           id: s.id,
           name: s.name,
           damage: s.damage[level - 1] || 0,
-          level
+          level,
+          cooldown: s.cooldown || 9999
         };
       }).filter(s => s.level > 0);
 
-      const reusable = ['양손공격', '쪼기'];
-      let remainingHP = selectedMonster.hp;
-      let combos = [];
-      let used = new Set();
+      skillsByDmg.sort((a, b) => b.damage - a.damage);
 
-      while (remainingHP > 0 && available.length > 0) {
-        let combo = [];
+      const reusable = ['양손공격', '쪼기'];
+      const output = [];
+      let remainingHP = selectedMonster.hp;
+      let shotCount = 1;
+
+      while (remainingHP > 0) {
         let total = 0;
-        for (let skill of available) {
-          if (used.has(skill.id) && !reusable.includes(skill.name)) continue;
+        let combo = [];
+
+        for (let skill of skillsByDmg) {
           if (total + skill.damage <= remainingHP || reusable.includes(skill.name)) {
             combo.push(skill);
             total += skill.damage;
-            used.add(skill.id);
           }
-          if (total >= remainingHP) break;
         }
-        combos.push({ combo, total });
-        remainingHP -= total;
-      }
 
-      const output = combos.map((c, i) => {
-        const names = c.combo.map(s => `${s.name}(${s.damage.toLocaleString()})`).join(' + ');
-        return `샷 ${i + 1}: ${names} = 총 ${c.total.toLocaleString()} 데미지, 남은 HP: ${Math.max(selectedMonster.hp - combos.slice(0, i + 1).reduce((a, b) => a + b.total, 0), 0).toLocaleString()}`;
-      });
+        output.push(`샷 ${shotCount++}: ${combo.map(s => `${s.name}(${s.damage.toLocaleString()})`).join(' + ')} = 총 ${total.toLocaleString()} 데미지, 남은 HP: ${Math.max(remainingHP - total, 0).toLocaleString()}`);
+        remainingHP -= total;
+
+        // 중복 허용: 평타 계열만 큐 유지
+        skillsByDmg.forEach(skill => {
+          if (!combo.includes(skill) || reusable.includes(skill.name)) combo.push(skill);
+        });
+      }
 
       if (remainingHP > 0) {
         output.push(`🩸 아직 남은 HP: ${remainingHP.toLocaleString()} — 스킬 부족`);
