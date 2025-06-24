@@ -7,7 +7,7 @@
     body { background: #1e1e1e; color: #eee; font-family: 'Noto Sans KR', sans-serif; padding: 20px; }
     h1 { font-size: 1.8em; color: #ff6600; }
     select, input { padding: 5px; margin-right: 10px; }
-    .skill-container, .timeline-wrapper { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px; }
+    .skill-container, .timeline-container { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px; }
     .skill, .slot {
       background: #2e2e2e;
       padding: 10px;
@@ -23,15 +23,18 @@
     .damage-text { margin-top: 5px; font-size: 0.9em; }
     .level-controls { display: flex; justify-content: center; gap: 5px; margin-top: 5px; }
     .level-controls button { padding: 2px 8px; }
-    .timeline-row { width: 100%; display: flex; gap: 10px; margin-bottom: 10px; }
+    .total-damage { margin-top: 15px; font-size: 1.2em; font-weight: bold; }
     .remove-btn {
       position: absolute;
-      top: 2px; right: 5px;
+      top: 3px;
+      right: 5px;
+      background: #ff4444;
+      border: none;
+      color: white;
+      font-size: 0.9em;
       cursor: pointer;
-      color: red;
-      font-weight: bold;
+      border-radius: 4px;
     }
-    .total-line-damage { font-weight: bold; font-size: 1em; color: #ffc107; margin-bottom: 10px; }
   </style>
 </head>
 <body>
@@ -44,79 +47,50 @@
         <option value="파충류">파충류</option>
       </select>
     </label>
+    <label>등급:
+      <select id="gradeSelect">
+        <option>A</option>
+        <option>S</option>
+        <option>SS</option>
+      </select>
+    </label>
+    <label>몬스터:
+      <select id="monsterSelect"></select>
+    </label>
     <label>수동 체력 입력:
       <input id="manualHP" type="number" placeholder="예: 176798">
     </label>
-    <span id="hpDisplay" style="color:orange; font-weight:bold"></span>
   </div>
+  <div id="hpDisplay" style="margin-top:10px; font-size:1.2em; color: orange"></div>
 
   <h2>스킬 목록</h2>
   <div class="skill-container" id="skillList"></div>
 
   <h2>타임라인</h2>
-  <div class="timeline-wrapper" id="timelineWrapper"></div>
+  <div id="timelineContainer"></div>
+  <div id="totalDamageDisplay" class="total-damage"></div>
 
   <script>
-    const skills = [
-      { id: 'magu', name: '마구때리기', race: '포유류', max: 10, img: 'images/magu.png', damage: [52137,104274,156411,208548,260685,312822,364959,417096,469233,521370], cooldown: 10 },
-      { id: 'yangson', name: '양손공격', race: '포유류', max: 10, img: 'images/yangson.png', damage: [20275,40550,60825,81037,101287,121537,141787,162037,182287,202537], cooldown: 4 },
-      { id: 'jiyeol', name: '지열참', race: '포유류', max: 10, img: 'images/jiyeol.png', damage: [162206,324412,486618,648824,811030,973236,1135442,1297648,1459854,1622060], cooldown: 34 },
-      { id: 'jjogi', name: '쪼기', race: '조류', max: 10, img: 'images/jjogi.png', damage: [22488,44972,67458,89942,112426,134910,157394,179878,202362,224846], cooldown: 4 },
-      { id: 'maeui', name: '매의위상', race: '조류', max: 10, img: 'images/maeui.png', damage: [88269,176538,264807,353076,441345,529614,617883,706152,794421,882690], cooldown: 16 },
-      { id: 'wind', name: '윈드쉐이커', race: '조류', max: 10, img: 'images/wind.png', damage: [123576,247152,370728,494304,617880,741456,865032,988608,1112184,1235760], cooldown: 22 },
-      { id: 'tail', name: '꼬리치기', race: '파충류', max: 10, img: 'images/tail.png', damage: [240680,477268,714579,950927,1188237,1424585,1661895,1898725,2135554,2371901], cooldown: 28 },
-      { id: 'claw', name: '할퀴기', race: '파충류', max: 10, img: 'images/claw.png', damage: [102980,205857,308736,411612,514490,617368,720245,823123,926001,1028879], cooldown: 12 }
-    ];
+    const allowedLevels = {
+      '포유류': { 'magu': 10, 'yangson': 10, 'jiyeol': 10, 'jjogi': 4, 'maeui': 4, 'wind': 2, 'tail': 4, 'claw': 4 },
+      '조류': { 'magu': 4, 'yangson': 4, 'jiyeol': 2, 'jjogi': 10, 'maeui': 10, 'wind': 10, 'tail': 4, 'claw': 4 },
+      '파충류': { 'magu': 4, 'yangson': 4, 'jiyeol': 2, 'jjogi': 4, 'maeui': 4, 'wind': 2, 'tail': 10, 'claw': 10 }
+    };
 
-    const timelineWrapper = document.getElementById("timelineWrapper");
-    const skillList = document.getElementById("skillList");
-    const hpDisplay = document.getElementById("hpDisplay");
-    const raceSelect = document.getElementById("raceSelect");
-    const manualHP = document.getElementById("manualHP");
+    const monsterData = {
+      "A": [ { name: "촌촌", hp: 176798 }, { name: "가스", hp: 273385 }, { name: "에스코모이드", hp: 335914 }, { name: "오튜", hp: 413594 } ],
+      "S": [ { name: "촌촌", hp: 993781 }, { name: "검은전갈", hp: 1685782 } ],
+      "SS": [ { name: "촌촌", hp: 4874967 }, { name: "보라전갈", hp: 5979141 } ]
+    };
 
-    let selectedHP = 0;
-    let skillLevels = {};
-    skills.forEach(s => skillLevels[s.id] = 1);
+    const timelineContainer = document.getElementById("timelineContainer");
 
-    function updateHPDisplay() {
-      selectedHP = parseInt(manualHP.value || 0);
-      hpDisplay.textContent = `목표 체력: ${selectedHP.toLocaleString()} HP`;
-      updateTimelineColor();
-    }
-
-    function updateSkillList() {
-      skillList.innerHTML = "";
-      const race = raceSelect.value;
-      skills.forEach(skill => {
-        const maxLevel = race === skill.race ? 10 : (skill.id === 'jiyeol' ? 2 : (['magu','yangson'].includes(skill.id) ? 4 : 4));
-        skillLevels[skill.id] = Math.min(skillLevels[skill.id], maxLevel);
-
-        const div = document.createElement("div");
-        div.className = "skill";
-        div.draggable = true;
-        div.dataset.skill = skill.id;
-        div.innerHTML = `<img src="${skill.img}"><div>${skill.name}</div><div class="damage-text">${skill.damage[skillLevels[skill.id]-1].toLocaleString()} 데미지</div><div class="level-controls"><button onclick="changeLevel('${skill.id}', -1)">-</button><span>${skillLevels[skill.id]}</span><button onclick="changeLevel('${skill.id}', 1)">+</button></div>`;
-        div.addEventListener("dragstart", e => e.dataTransfer.setData("text/plain", skill.id));
-        skillList.appendChild(div);
-      });
-    }
-
-    function changeLevel(id, delta) {
-      const race = raceSelect.value;
-      const skill = skills.find(s => s.id === id);
-      const limit = race === skill.race ? 10 : (id === 'jiyeol' ? 2 : (['magu','yangson'].includes(id) ? 4 : 4));
-      skillLevels[id] = Math.max(1, Math.min(limit, skillLevels[id] + delta));
-      updateSkillList();
-    }
-
-    function createTimelineRows() {
-      timelineWrapper.innerHTML = "";
-      for (let row = 0; row < 5; row++) {
-        const rowDiv = document.createElement("div");
-        rowDiv.className = "timeline-row";
-        rowDiv.dataset.row = row;
-
-        for (let col = 0; col < 8; col++) {
+    function createMultiTimeline(rows = 4, cols = 5) {
+      timelineContainer.innerHTML = "";
+      for (let r = 0; r < rows; r++) {
+        const row = document.createElement("div");
+        row.className = "timeline-container";
+        for (let i = 0; i < cols; i++) {
           const slot = document.createElement("div");
           slot.className = "slot";
           slot.addEventListener("dragover", e => e.preventDefault());
@@ -124,45 +98,174 @@
             const id = e.dataTransfer.getData("text/plain");
             const skill = skills.find(s => s.id === id);
             if (skill) {
-              const damage = skill.damage[skillLevels[id]-1];
-              slot.innerHTML = `<span class='remove-btn' onclick='this.parentElement.innerHTML="";this.parentElement.dataset.damage="0";updateTimelineColor();'>✖</span><img src="${skill.img}"><div>${skill.name}</div><div class="damage-text">${damage.toLocaleString()} 데미지</div>`;
-              slot.dataset.damage = damage;
+              const dmg = skill.damage[skillLevels[id] - 1];
+              slot.innerHTML = `<button class="remove-btn" onclick="this.parentElement.innerHTML=''; updateTimelineColor()">X</button><img src="${skill.img}"><div>${skill.name}</div><div class="damage-text">${dmg.toLocaleString()} 데미지</div>`;
+              slot.dataset.damage = dmg;
               updateTimelineColor();
             }
           });
-          rowDiv.appendChild(slot);
+          row.appendChild(slot);
         }
-
-        const dmgDiv = document.createElement("div");
-        dmgDiv.className = "total-line-damage";
-        dmgDiv.id = `lineDamage${row}`;
-        timelineWrapper.appendChild(rowDiv);
-        timelineWrapper.appendChild(dmgDiv);
+        timelineContainer.appendChild(row);
       }
+    }
+
+        const skills = [
+  {
+    id: 'magu',
+    name: '마구때리기',
+    race: '포유류',
+    max: 10,
+    img: 'images/magu.png',
+    damage: [52137, 104274, 156411, 208548, 260685, 312822, 364959, 417096, 469233, 521370],
+    cooldown: 10
+  },
+  {
+    id: 'yangson',
+    name: '양손공격',
+    race: '포유류',
+    max: 10,
+    img: 'images/yangson.png',
+    damage: [20275, 40550, 60825, 81037, 101287, 121537, 141787, 162037, 182287, 202537],
+    cooldown: 4
+  },
+  {
+    id: 'jiyeol',
+    name: '지열참',
+    race: '포유류',
+    max: 10,
+    img: 'images/jiyeol.png',
+    damage: [162206, 324412, 486618, 648824, 811030, 973236, 1135442, 1297648, 1459854, 1622060],
+    cooldown: 34
+  },
+  {
+    id: 'jjogi',
+    name: '쪼기',
+    race: '조류',
+    max: 10,
+    img: 'images/jjogi.png',
+    damage: [22488, 44972, 67458, 89942, 112426, 134910, 157394, 179878, 202362, 224846],
+    cooldown: 4
+  },
+  {
+    id: 'maeui',
+    name: '매의위상',
+    race: '조류',
+    max: 10,
+    img: 'images/maeui.png',
+    damage: [88269, 176538, 264807, 353076, 441345, 529614, 617883, 706152, 794421, 882690],
+    cooldown: 16
+  },
+  {
+    id: 'wind',
+    name: '윈드쉐이커',
+    race: '조류',
+    max: 10,
+    img: 'images/wind.png',
+    damage: [123576, 247152, 370728, 494304, 617880, 741456, 865032, 988608, 1112184, 1235760],
+    cooldown: 22
+  },
+  {
+    id: 'tail',
+    name: '꼬리치기',
+    race: '파충류',
+    max: 10,
+    img: 'images/tail.png',
+    damage: [240680, 477268, 714579, 950927, 1188237, 1424585, 1661895, 1898725, 2135554, 2371901],
+    cooldown: 28
+  },
+  {
+    id: 'claw',
+    name: '할퀴기',
+    race: '파충류',
+    max: 10,
+    img: 'images/claw.png',
+    damage: [102980, 205857, 308736, 411612, 514490, 617368, 720245, 823123, 926001, 1028879],
+    cooldown: 12
+  }
+];
+    const skillLevels = {};
+    skills.forEach(s => skillLevels[s.id] = 1);
+
+    function updateMonsterList() {
+      const grade = gradeSelect.value;
+      monsterSelect.innerHTML = "";
+      monsterData[grade].forEach(m => {
+        const opt = document.createElement("option");
+        opt.value = m.hp;
+        opt.textContent = m.name;
+        monsterSelect.appendChild(opt);
+      });
+      updateHP();
+    }
+
+    function updateHP() {
+      const manual = document.getElementById("manualHP").value;
+      selectedHP = manual ? parseInt(manual) : parseInt(monsterSelect.value);
+      hpDisplay.textContent = `목표 체력: ${selectedHP.toLocaleString()} HP`;
+      updateTimelineColor();
+    }
+
+    function updateSkillList() {
+      skillList.innerHTML = "";
+      const selectedRace = raceSelect.value;
+      skills.forEach(skill => {
+        const maxLevel = allowedLevels[selectedRace][skill.id];
+        if (!maxLevel) return;
+        const div = document.createElement("div");
+        div.className = "skill";
+        div.draggable = true;
+        div.dataset.skill = skill.id;
+        const level = skillLevels[skill.id] = Math.min(skillLevels[skill.id], maxLevel);
+        div.innerHTML = `
+          <img src="${skill.img}"><br>
+          ${skill.name}<br>
+          <div class="damage-text">${skill.damage[level - 1].toLocaleString()} 데미지</div>
+          <div class="level-controls">
+            <button onclick="changeLevel('${skill.id}', -1)">-</button>
+            <span>${level}</span>
+            <button onclick="changeLevel('${skill.id}', 1)">+</button>
+          </div>
+        `;
+        div.addEventListener("dragstart", e => e.dataTransfer.setData("text/plain", skill.id));
+        skillList.appendChild(div);
+      });
+    }
+
+    function changeLevel(id, delta) {
+      const race = raceSelect.value;
+      const max = allowedLevels[race][id];
+      skillLevels[id] = Math.max(1, Math.min(max, skillLevels[id] + delta));
+      updateSkillList();
     }
 
     function updateTimelineColor() {
-      let grandTotal = 0;
-      for (let row = 0; row < 5; row++) {
-        let total = 0;
-        const rowElem = document.querySelector(`.timeline-row[data-row='${row}']`);
-        rowElem.querySelectorAll(".slot").forEach(slot => {
-          total += parseInt(slot.dataset.damage || 0);
-        });
-        document.getElementById(`lineDamage${row}`).textContent = `샷 ${row + 1} 합계: ${total.toLocaleString()} 데미지`;
-        document.getElementById(`lineDamage${row}`).classList.toggle("highlight", selectedHP && total >= selectedHP);
-        grandTotal += total;
-      }
+      const allSlots = timelineContainer.querySelectorAll(".slot");
+      let total = 0;
+      allSlots.forEach(slot => {
+        const dmg = parseInt(slot.dataset.damage || 0);
+        total += dmg;
+      });
+      totalDamageDisplay.textContent = `합계 데미지: ${total.toLocaleString()} / ${selectedHP.toLocaleString()} HP`;
+      if (total >= selectedHP) totalDamageDisplay.classList.add("highlight");
+      else totalDamageDisplay.classList.remove("highlight");
     }
 
-    manualHP.addEventListener("input", updateHPDisplay);
-    raceSelect.addEventListener("change", () => {
-      updateSkillList();
-    });
+    const gradeSelect = document.getElementById("gradeSelect");
+    const monsterSelect = document.getElementById("monsterSelect");
+    const raceSelect = document.getElementById("raceSelect");
+    const skillList = document.getElementById("skillList");
+    const hpDisplay = document.getElementById("hpDisplay");
+    let selectedHP = 0;
 
-    updateHPDisplay();
+    gradeSelect.addEventListener("change", updateMonsterList);
+    monsterSelect.addEventListener("change", updateHP);
+    raceSelect.addEventListener("change", updateSkillList);
+    document.getElementById("manualHP").addEventListener("input", updateHP);
+
+    updateMonsterList();
     updateSkillList();
-    createTimelineRows();
+    createMultiTimeline();
   </script>
 </body>
 </html>
