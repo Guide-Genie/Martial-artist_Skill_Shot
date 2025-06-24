@@ -11,10 +11,20 @@
       padding: 20px;
     }
     h1 {
-      color: #ff6600;
+      font-size: 24px;
+      color: #ffcc00;
     }
     .selector {
       margin-bottom: 10px;
+    }
+    select {
+      padding: 4px 8px;
+      font-size: 14px;
+    }
+    #monsterHPDisplay {
+      margin: 10px 0;
+      font-size: 16px;
+      color: #ffcc00;
     }
     .skill-grid {
       display: flex;
@@ -23,61 +33,56 @@
       margin-bottom: 20px;
     }
     .skill {
-      width: 90px;
+      width: 80px;
       background-color: #333;
-      border: 1px solid #444;
-      border-radius: 5px;
+      border: 1px solid #555;
+      border-radius: 8px;
+      padding: 6px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 5px;
     }
     .skill img {
       width: 48px;
       height: 48px;
     }
+    .skill-name {
+      font-size: 12px;
+      text-align: center;
+      margin-top: 4px;
+    }
+    .level-display {
+      font-size: 12px;
+      margin: 2px 0;
+      white-space: pre-line;
+      text-align: center;
+    }
     .level-controls {
       display: flex;
       justify-content: center;
       gap: 4px;
-      margin-top: 2px;
     }
     .level-controls button {
-      background: #555;
-      color: #fff;
-      border: none;
       width: 24px;
       height: 24px;
       font-size: 14px;
+      background-color: #666;
+      color: white;
+      border: none;
+      border-radius: 4px;
       cursor: pointer;
-      border-radius: 3px;
-    }
-    .level-display, .skill-name, .damage-display {
-      font-size: 12px;
-      text-align: center;
-    }
-    .restricted {
-      color: orange;
     }
     #resultArea {
-      margin-top: 20px;
       font-size: 14px;
-    }
-    #monsterHPDisplay {
-      margin-top: 10px;
-      font-size: 16px;
-      color: #ffcc00;
     }
   </style>
 </head>
 <body>
   <h1>🧱 무도가 스킬 시뮬레이터</h1>
   <div class="selector">
-    <label for="race">종족 선택: </label>
-    <select id="race"></select>
-    <label for="grade">사냥터 등급 선택: </label>
+    <label for="grade">등급 선택:</label>
     <select id="grade"></select>
-    <label for="monster">몬스터 선택: </label>
+    <label for="monster">몬스터 선택:</label>
     <select id="monster"></select>
   </div>
   <div id="monsterHPDisplay"></div>
@@ -95,206 +100,175 @@
   { id: 'tail', name: '꼬리치기', race: '파충류', max: 10, img: 'images/tail.png', damage: [240680, 477268, 714579, 950927, 1188237, 1424585, 1661895, 1898725, 2135554, 2371901] },
   { id: 'claw', name: '할퀴기', race: '파충류', max: 10, img: 'images/claw.png', damage: [102980, 205857, 308736, 411612, 514490, 617368, 720245, 823123, 926001, 1028879] }
 ];
-
-const monsterData = {
-  "E": [
-    { name: "슬라임", hp: 1564 },
-    { name: "프로그", hp: 1691 },
-    { name: "터틀", hp: 2002 },
-    { name: "슬러그", hp: 3582 },
-    { name: "바크", hp: 3651 },
-    { name: "풍풍이", hp: 5654 },
-    { name: "촌촌", hp: 6029 },
-    { name: "가스", hp: 7045 },
-    { name: "에스코모이드", hp: 8257 },
-    { name: "오튜", hp: 7966 }
-  ],
-  "D": [
-    { name: "슬라임", hp: 4408 },
-    { name: "프로그", hp: 5086 },
-    { name: "크랩", hp: 5943 },
-    { name: "터틀", hp: 6869 },
-    { name: "리치", hp: 7918 },
-    { name: "슬러그", hp: 8673 },
-    { name: "바크", hp: 11016 },
-    { name: "말미잘", hp: 10736 },
-    { name: "풍풍이", hp: 13034 },
-    { name: "가스", hp: 17734 },
-    { name: "에스코모이드", hp: 21196 },
-    { name: "오튜", hp: 22030 },
-    { name: "크라켄", hp: 26487 }
-  ],
-  "C": [
-    { name: "슬라임", hp: 18186 },
-    { name: "프로그", hp: 18665 },
-    { name: "크랩", hp: 19739 },
-    { name: "터틀", hp: 21700 },
-    { name: "리치", hp: 23102 },
-    { name: "슬러그", hp: 23606 },
-    { name: "바크", hp: 28606 },
-    { name: "말미잘", hp: 30348 },
-    { name: "풍풍이", hp: 32303 },
-    { name: "촌촌", hp: 30648 },
-    { name: "가스", hp: 36681 },
-    { name: "에스코모이드", hp: 39337 },
-    { name: "오튜", hp: 40502 },
-    { name: "크라켄", hp: 42160 }
-  ],
-  "B": [
-    { name: "오튜", hp: 56528 },
-    { name: "에스코모이드", hp: 57299 },
-    { name: "요오다", hp: 58560 },
-    { name: "촌촌", hp: 59299 },
-    { name: "가스", hp: 59494 },
-    { name: "부루마", hp: 62547 },
-    { name: "크라켄", hp: 63491 },
-    { name: "그렘린", hp: 69553 }
-  ],
-  "A": [
-    { name: "촌촌", hp: 176798 },
-    { name: "가스", hp: 273385 },
-    { name: "에스코모이드", hp: 335914 },
-    { name: "오튜", hp: 413594 },
-    { name: "크라켄", hp: 440025 },
-    { name: "그렘린", hp: 451487 },
-    { name: "요오다", hp: 478211 },
-    { name: "부루마", hp: 518903 }
-  ],
-  "S": [
-    { name: "촌촌", hp: 993781 },
-    { name: "검은전갈", hp: 1685782 },
-    { name: "붉은그래브", hp: 2379253 },
-    { name: "붉은터틀", hp: 3090120 },
-    { name: "요오다", hp: 3186410 },
-    { name: "부루마", hp: 3652289 },
-    { name: "그렘린", hp: 4208420 },
-    { name: "붉은말미잘", hp: 4536507 }
-  ],
-  "SS": [
-    { name: "촌촌", hp: 4874967 },
-    { name: "보라전갈", hp: 5979141 },
-    { name: "푸른터틀", hp: 6093503 },
-    { name: "녹빛그래브", hp: 7004127 },
-    { name: "붉은말미잘", hp: 7542848 },
-    { name: "부루마", hp: 8119564 },
-    { name: "블루푸아", hp: 9042696 },
-    { name: "어두운말미잘", hp: 9584672 }
-  ]
-};
-    const raceLimits = {
-      '포유류': { '포유류': 10, '조류': 4, '파충류': 2 },
-      '조류': { '포유류': 4, '조류': 10, '파충류': 2 },
-      '파충류': { '포유류': 4, '조류': 4, '파충류': 10 }
+    const monsterData = {
+      "A": [
+        { name: "촌촌", hp: 176798 },
+        { name: "가스", hp: 273385 },
+        { name: "에스코모이드", hp: 335914 },
+        { name: "오튜", hp: 413594 },
+        { name: "크라켄", hp: 440025 },
+        { name: "그렘린", hp: 451487 },
+        { name: "요오다", hp: 478211 },
+        { name: "부루마", hp: 518903 }
+      ],
+      "S": [
+        { name: "촌촌", hp: 993781 },
+        { name: "검은전갈", hp: 1685782 },
+        { name: "붉은그래브", hp: 2379253 },
+        { name: "붉은터틀", hp: 3090120 },
+        { name: "요오다", hp: 3186410 },
+        { name: "부루마", hp: 3652289 },
+        { name: "그렘린", hp: 4208420 },
+        { name: "붉은말미잘", hp: 4536507 }
+      ],
+      "SS": [
+        { name: "촌촌", hp: 4874967 },
+        { name: "보라전갈", hp: 5979141 },
+        { name: "푸른터틀", hp: 6093503 },
+        { name: "녹빛그래브", hp: 7004127 },
+        { name: "붉은말미잘", hp: 7542848 },
+        { name: "부루마", hp: 8119564 },
+        { name: "블루푸아", hp: 9042696 },
+        { name: "어두운말미잘", hp: 9584672 }
+      ]
     };
 
-    let selectedRace = '포유류';
-    let currentLevels = JSON.parse(localStorage.getItem('skillLevels') || '{}');
     let selectedMonster = null;
-
-    function saveLevels() {
-      localStorage.setItem('skillLevels', JSON.stringify(currentLevels));
-    }
+    let currentLevels = JSON.parse(localStorage.getItem("skillLevels") || "{}");
 
     function updateSelectors() {
-      const raceSel = document.getElementById('race');
-      raceSel.innerHTML = ['포유류','조류','파충류'].map(r => `<option${selectedRace===r?' selected':''}>${r}</option>`).join('');
-      const gradeSel = document.getElementById('grade');
-      gradeSel.innerHTML = Object.keys(monsterData).map(g => `<option>${g}</option>`).join('');
-      updateMonsterSelector();
+      const gradeSel = document.getElementById("grade");
+      const monsterSel = document.getElementById("monster");
+      gradeSel.innerHTML = Object.keys(monsterData).map(g => `<option>${g}</option>`).join("");
+      gradeSel.value = Object.keys(monsterData)[0];
+      updateMonsters();
     }
 
-    function updateMonsterSelector() {
-      const grade = document.getElementById('grade').value;
-      const monsterSel = document.getElementById('monster');
+    function updateMonsters() {
+      const grade = document.getElementById("grade").value;
       const monsters = monsterData[grade] || [];
-      monsters.sort((a,b)=>a.hp-b.hp);
-      monsterSel.innerHTML = monsters.map(m => `<option value="${m.name}">${m.name}</option>`).join('');
+      const monsterSel = document.getElementById("monster");
+      monsterSel.innerHTML = monsters.map(m => `<option>${m.name}</option>`).join("");
+      monsterSel.value = monsters[0].name;
       updateSelectedMonster();
     }
 
     function updateSelectedMonster() {
-      const grade = document.getElementById('grade').value;
-      const name = document.getElementById('monster').value;
-      selectedMonster = (monsterData[grade] || []).find(m => m.name === name);
-      document.getElementById('monsterHPDisplay').innerText = `📌 몬스터 체력: ${selectedMonster.hp.toLocaleString()} HP`;
-      renderSkills();
+      const grade = document.getElementById("grade").value;
+      const name = document.getElementById("monster").value;
+      selectedMonster = monsterData[grade].find(m => m.name === name);
+      document.getElementById("monsterHPDisplay").innerText = `📌 몬스터 체력: ${selectedMonster.hp.toLocaleString()} HP`;
       calculateShots();
     }
 
     function renderSkills() {
-      const grid = document.getElementById('skillGrid');
-      grid.innerHTML = '';
+      const grid = document.getElementById("skillGrid");
+      grid.innerHTML = "";
       skills.forEach(skill => {
-        const max = raceLimits[selectedRace][skill.race];
-        const level = currentLevels[skill.id] || 0;
+        const box = document.createElement("div");
+        box.className = "skill";
 
-        const box = document.createElement('div');
-        box.className = 'skill';
-        box.innerHTML = `
-          <img src="${skill.img}" alt="${skill.name}" />
-          <div class="skill-name">${skill.name}</div>
-          <div class="level-display ${skill.race !== selectedRace ? 'restricted' : ''}">${level}/${max}</div>
-          <div class="damage-display">${(skill.damage[level - 1] || 0).toLocaleString()} 데미지</div>
-          <div class="level-controls">
-            <button onclick="changeLevel('${skill.id}', -1)">-</button>
-            <button onclick="changeLevel('${skill.id}', 1)">+</button>
-          </div>
-        `;
+        const img = document.createElement("img");
+        img.src = skill.img;
+        box.appendChild(img);
+
+        const name = document.createElement("div");
+        name.className = "skill-name";
+        name.innerText = skill.name;
+        box.appendChild(name);
+
+        const level = currentLevels[skill.id] || 0;
+        const damage = skill.damage[level - 1] || 0;
+
+        const display = document.createElement("div");
+        display.className = "level-display";
+        display.innerText = `${level}/${skill.max}\n${damage.toLocaleString()}\n데미지`;
+        box.appendChild(display);
+
+        const controls = document.createElement("div");
+        controls.className = "level-controls";
+
+        const minus = document.createElement("button");
+        minus.innerText = "-";
+        minus.onclick = () => {
+          if (currentLevels[skill.id] > 0) {
+            currentLevels[skill.id]--;
+            localStorage.setItem("skillLevels", JSON.stringify(currentLevels));
+            renderSkills();
+            calculateShots();
+          }
+        };
+
+        const plus = document.createElement("button");
+        plus.innerText = "+";
+        plus.onclick = () => {
+          if (currentLevels[skill.id] < skill.max) {
+            currentLevels[skill.id] = (currentLevels[skill.id] || 0) + 1;
+            localStorage.setItem("skillLevels", JSON.stringify(currentLevels));
+            renderSkills();
+            calculateShots();
+          }
+        };
+
+        controls.appendChild(minus);
+        controls.appendChild(plus);
+        box.appendChild(controls);
+
         grid.appendChild(box);
       });
     }
 
-    function changeLevel(id, delta) {
-      const skill = skills.find(s => s.id === id);
-      const max = raceLimits[selectedRace][skill.race];
-      const val = (currentLevels[id] || 0) + delta;
-      if (val >= 0 && val <= max) {
-        currentLevels[id] = val;
-        saveLevels();
-        renderSkills();
-        calculateShots();
-      }
-    }
-
     function calculateShots() {
-      const resultArea = document.getElementById('resultArea');
+      const resultArea = document.getElementById("resultArea");
       if (!selectedMonster) return;
 
-      let available = skills.map(s => {
+      let remainingHP = selectedMonster.hp;
+      const usable = skills.map(s => {
         const level = currentLevels[s.id] || 0;
-        return { id: s.id, name: s.name, damage: s.damage[level - 1] || 0, usable: level > 0, used: 0, repeat: ['양손공격','쪼기'].includes(s.name) ? 2 : 1 };
-      }).filter(s => s.usable);
+        return level > 0 ? {
+          id: s.id,
+          name: s.name,
+          damage: s.damage[level - 1],
+          cooldown: s.cooldown || 0
+        } : null;
+      }).filter(Boolean);
 
-      let monsterHP = selectedMonster.hp;
-      const result = [];
+      const reusable = ["양손공격", "쪼기"];
+      const output = [];
+      let shot = 1;
 
-      while (available.some(s => s.used < s.repeat)) {
-        let combo = [];
-        let sum = 0;
-        for (let skill of available) {
-          if (skill.used < skill.repeat) {
-            combo.push(skill);
-            sum += skill.damage;
-            skill.used++;
-            if (sum >= monsterHP) break;
+      while (remainingHP > 0 && usable.length > 0) {
+        let total = 0;
+        const used = [];
+
+        for (const s of usable) {
+          if (reusable.includes(s.name) || !used.includes(s.name)) {
+            if (total + s.damage <= remainingHP || total === 0) {
+              total += s.damage;
+              used.push(s.name);
+              if (!reusable.includes(s.name)) usable.splice(usable.findIndex(x => x.id === s.id), 1);
+              if (total >= remainingHP) break;
+            }
           }
         }
-        if (combo.length === 0) break;
-        result.push(`샷 ${result.length+1}: ` + combo.map(s => `${s.name}(${s.damage.toLocaleString()})`).join(' + ') + ` = 총 ${sum.toLocaleString()} 데미지`);
+
+        output.push(`샷 ${shot++}: ${used.join(' + ')} = ${total.toLocaleString()} 데미지, 남은 HP: ${Math.max(0, remainingHP - total).toLocaleString()}`);
+        remainingHP -= total;
       }
 
-      resultArea.innerHTML = result.map(r => `<div>${r}</div>`).join('');
+      if (remainingHP > 0) {
+        output.push(`🩸 남은 체력: ${remainingHP.toLocaleString()} — 스킬 부족`);
+      }
+
+      resultArea.innerHTML = output.map(line => `<div>${line}</div>`).join('');
     }
 
-    document.getElementById('race').addEventListener('change', e => {
-      selectedRace = e.target.value;
+    document.getElementById("grade").addEventListener("change", updateMonsters);
+    document.getElementById("monster").addEventListener("change", updateSelectedMonster);
+    window.onload = () => {
+      updateSelectors();
       renderSkills();
-      calculateShots();
-    });
-    document.getElementById('grade').addEventListener('change', updateMonsterSelector);
-    document.getElementById('monster').addEventListener('change', updateSelectedMonster);
-
-    window.onload = updateSelectors;
+    };
   </script>
 </body>
 </html>
