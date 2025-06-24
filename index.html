@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>무도가 스킬 시뮬레이터</title>
+  <style>
+    body {
+      background-color: #1c1c1c;
+      color: #eee;
+      font-family: 'Noto Sans KR', sans-serif;
+      padding: 20px;
+    }
+    .skill-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .skill {
+      width: 60px;
+      height: 60px;
+      background-color: #333;
+      border: 1px solid #444;
+      border-radius: 5px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+    }
+    .skill img {
+      width: 48px;
+      height: 48px;
+    }
+    .level-controls {
+      position: absolute;
+      bottom: -20px;
+      display: flex;
+      justify-content: center;
+      width: 100%;
+      gap: 2px;
+    }
+    .level-controls button {
+      background: #555;
+      color: #fff;
+      border: none;
+      width: 20px;
+      height: 20px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .level-display {
+      font-size: 10px;
+      margin-top: 2px;
+    }
+    .restricted {
+      color: orange;
+    }
+    .selector {
+      margin-bottom: 20px;
+    }
+    select {
+      padding: 4px 8px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧱 무도가 스킬 시뮬레이터</h1>
+
+  <div class="selector">
+    <label for="race">내 종족 선택: </label>
+    <select id="race">
+      <option value="포유류">포유류</option>
+      <option value="조류">조류</option>
+      <option value="파충류">파충류</option>
+    </select>
+  </div>
+
+  <div class="skill-grid" id="skillGrid"></div>
+
+  <script>
+    const skills = [
+      { id: 'magu', name: '마구때리기', race: '포유류', max: 10, img: 'images/magu.png' },
+      { id: 'yangson', name: '양손공격', race: '포유류', max: 4, img: 'images/yangson.png' },
+      { id: 'jiyeol', name: '지열참', race: '포유류', max: 4, img: 'images/jiyeol.png' },
+      { id: 'jjogi', name: '쪼기', race: '조류', max: 4, img: 'images/jjogi.png' },
+      { id: 'maeui', name: '매의위상', race: '조류', max: 4, img: 'images/maeui.png' },
+      { id: 'wind', name: '윈드쉐이커', race: '조류', max: 4, img: 'images/wind.png' },
+      { id: 'tail', name: '꼬리치기', race: '파충류', max: 10, img: 'images/tail.png' },
+      { id: 'claw', name: '할퀴기', race: '파충류', max: 2, img: 'images/claw.png' }
+    ];
+
+    const raceLimits = {
+      '포유류': {
+        '포유류': 10,
+        '조류': 4,
+        '파충류': 2
+      },
+      '조류': {
+        '포유류': 4,
+        '조류': 10,
+        '파충류': 2
+      },
+      '파충류': {
+        '포유류': 4,
+        '조류': 4,
+        '파충류': 10
+      }
+    };
+
+    let selectedRace = '포유류';
+
+    document.getElementById('race').addEventListener('change', e => {
+      selectedRace = e.target.value;
+      renderSkills();
+    });
+
+    function renderSkills() {
+      const skillGrid = document.getElementById('skillGrid');
+      skillGrid.innerHTML = '';
+
+      skills.forEach(skill => {
+        const container = document.createElement('div');
+        container.className = 'skill';
+        container.id = skill.id;
+
+        const img = document.createElement('img');
+        img.src = skill.img;
+        img.alt = skill.name;
+
+        const levelDisplay = document.createElement('div');
+        levelDisplay.className = 'level-display';
+        let currentLevel = 0;
+
+        const maxLevel = raceLimits[selectedRace][skill.race];
+        if (skill.race !== selectedRace) levelDisplay.classList.add('restricted');
+        levelDisplay.innerText = `${currentLevel}/${maxLevel}`;
+
+        const controls = document.createElement('div');
+        controls.className = 'level-controls';
+
+        const minus = document.createElement('button');
+        minus.innerText = '-';
+        minus.onclick = () => {
+          let cur = parseInt(levelDisplay.innerText.split('/')[0]);
+          if (cur > 0) {
+            cur--;
+            levelDisplay.innerText = `${cur}/${maxLevel}`;
+          }
+        };
+
+        const plus = document.createElement('button');
+        plus.innerText = '+';
+        plus.onclick = () => {
+          let cur = parseInt(levelDisplay.innerText.split('/')[0]);
+          if (cur < maxLevel) {
+            cur++;
+            levelDisplay.innerText = `${cur}/${maxLevel}`;
+          }
+        };
+
+        controls.appendChild(minus);
+        controls.appendChild(plus);
+        container.appendChild(img);
+        container.appendChild(levelDisplay);
+        container.appendChild(controls);
+
+        skillGrid.appendChild(container);
+      });
+    }
+
+    renderSkills();
+  </script>
+</body>
+</html>
