@@ -17,14 +17,15 @@
       margin-bottom: 20px;
     }
     .skill {
-      width: 72px;
+      width: 80px;
       background-color: #333;
-      border: 1px solid #444;
-      border-radius: 5px;
+      border: 1px solid #555;
+      border-radius: 8px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 5px;
+      padding: 6px;
+      box-shadow: 0 0 6px #000;
     }
     .skill img {
       width: 48px;
@@ -33,23 +34,23 @@
     .level-controls {
       display: flex;
       justify-content: center;
-      gap: 2px;
+      gap: 4px;
     }
     .level-controls button {
-      background: #888;
+      background: #666;
       color: #fff;
       border: none;
       width: 24px;
       height: 24px;
       font-size: 14px;
+      border-radius: 4px;
       cursor: pointer;
-      border-radius: 3px;
     }
     .level-display {
       font-size: 13px;
       margin: 2px 0;
       text-align: center;
-      line-height: 1.2em;
+      white-space: nowrap;
     }
     .skill-name {
       font-size: 11px;
@@ -59,7 +60,7 @@
       color: orange;
     }
     .selector {
-      margin-bottom: 10px;
+      margin-bottom: 12px;
     }
     select {
       padding: 4px 8px;
@@ -68,6 +69,7 @@
     #resultArea {
       margin-top: 20px;
       font-size: 14px;
+      line-height: 1.8;
     }
     #monsterHPDisplay {
       margin-top: 10px;
@@ -80,6 +82,13 @@
   <h1>🧱 무도가 스킬 시뮬레이터</h1>
 
   <div class="selector">
+    <label for="race">종족 선택: </label>
+    <select id="race">
+      <option value="포유류">포유류</option>
+      <option value="조류">조류</option>
+      <option value="파충류">파충류</option>
+    </select>
+    &nbsp;&nbsp;
     <label for="grade">사냥터 등급 선택: </label>
     <select id="grade"></select>
     <label for="monster">몬스터 선택: </label>
@@ -93,7 +102,7 @@
   <div id="resultArea"></div>
 
   <script>
-           const skills = [
+            const skills = [
   { id: 'magu', name: '마구때리기', race: '포유류', max: 10, img: 'images/magu.png', damage: [52137, 104274, 156411, 208548, 260685, 312822, 364959, 417096, 469233, 521370] },
   { id: 'yangson', name: '양손공격', race: '포유류', max: 10, img: 'images/yangson.png', damage: [20275, 40550, 60825, 81037, 101294, 121550, 141806, 162062, 182319, 202750] },
   { id: 'jiyeol', name: '지열참', race: '포유류', max: 10, img: 'images/jiyeol.png', damage: [162206, 324412, 486618, 648824, 811030, 973236, 1135442, 1297648, 1459854, 1622060] },
@@ -196,8 +205,8 @@ const monsterData = {
       '파충류': { '포유류': 4, '조류': 4, '파충류': 10 }
     };
 
-    let selectedRace = '포유류';
-    let currentLevels = JSON.parse(localStorage.getItem('skillLevels') || '{}');
+    let selectedRace = localStorage.getItem('race') || '포유류';
+    let currentLevels = JSON.parse(localStorage.getItem('levels') || '{}');
     let selectedMonster = null;
 
     function updateMonsterSelector() {
@@ -264,7 +273,7 @@ const monsterData = {
         minus.onclick = () => {
           if (currentLevels[skill.id] > 0) {
             currentLevels[skill.id]--;
-            localStorage.setItem('skillLevels', JSON.stringify(currentLevels));
+            persist();
             renderSkills();
             calculateShots();
           }
@@ -273,9 +282,9 @@ const monsterData = {
         const plus = document.createElement('button');
         plus.innerText = '+';
         plus.onclick = () => {
-          if (currentLevels[skill.id] < max) {
+          if ((currentLevels[skill.id] || 0) < max) {
             currentLevels[skill.id] = (currentLevels[skill.id] || 0) + 1;
-            localStorage.setItem('skillLevels', JSON.stringify(currentLevels));
+            persist();
             renderSkills();
             calculateShots();
           }
@@ -293,62 +302,69 @@ const monsterData = {
       const resultArea = document.getElementById('resultArea');
       if (!selectedMonster) return;
 
-      const availableSkills = skills.map(s => {
+      const reusable = ['양손공격', '쪼기'];
+      const skillsByDmg = skills.map(s => {
         const level = currentLevels[s.id] || 0;
         return {
           id: s.id,
           name: s.name,
           damage: s.damage[level - 1] || 0,
-          level
+          level,
+          cooldown: s.cooldown || 9999
         };
       }).filter(s => s.level > 0);
 
-      const reusable = ['양손공격', '쪼기'];
-      const singleUse = availableSkills.filter(s => !reusable.includes(s.name));
-      const multiUse = availableSkills.filter(s => reusable.includes(s.name));
-
-      const shots = [];
+      const used = [];
       let remainingHP = selectedMonster.hp;
       let shotCount = 1;
+      let output = [];
 
-      while (remainingHP > 0 && (singleUse.length > 0 || multiUse.length > 0)) {
-        let combo = [];
-        let sum = 0;
-        const used = new Set();
+      while (remainingHP > 0) {
+        let shot = [];
+        let total = 0;
+        let temp = [...skillsByDmg];
+        temp.sort((a, b) => b.damage - a.damage);
 
-        for (let s of singleUse) {
-          if (!used.has(s.name) && sum + s.damage <= remainingHP) {
-            combo.push(s);
-            sum += s.damage;
-            used.add(s.name);
+        for (let skill of temp) {
+          if (used.includes(skill.id) && !reusable.includes(skill.name)) continue;
+          if (total + skill.damage <= remainingHP || reusable.includes(skill.name)) {
+            shot.push(skill);
+            total += skill.damage;
+            if (!reusable.includes(skill.name)) used.push(skill.id);
           }
-        }
-        for (let s of multiUse) {
-          while (sum + s.damage <= remainingHP) {
-            combo.push(s);
-            sum += s.damage;
-          }
+          if (total >= remainingHP) break;
         }
 
-        if (combo.length === 0) break;
-        remainingHP -= sum;
-        shots.push(`샷 ${shotCount++}: ${combo.map(s => `${s.name}(${s.damage.toLocaleString()})`).join(' + ')} = ${sum.toLocaleString()} 데미지 → 남은 ${remainingHP.toLocaleString()} HP`);
-
-        singleUse.length = 0; // 1회만 사용
+        output.push(`샷 ${shotCount++}: ${shot.map(s => `${s.name}(${s.damage.toLocaleString()})`).join(' + ')} = ${total.toLocaleString()} 데미지`);
+        remainingHP -= total;
+        if (shot.length === 0) break;
       }
 
       if (remainingHP > 0) {
-        shots.push(`🩸 남은 체력: ${remainingHP.toLocaleString()} → 스킬 부족`);
+        output.push(`🩸 남은 HP: ${remainingHP.toLocaleString()} — 스킬 부족`);
       }
 
-      resultArea.innerHTML = shots.map(line => `<div>${line}</div>`).join('');
+      resultArea.innerHTML = output.map(line => `<div>${line}</div>`).join('');
     }
+
+    function persist() {
+      localStorage.setItem('levels', JSON.stringify(currentLevels));
+      localStorage.setItem('race', selectedRace);
+    }
+
+    document.getElementById('race').addEventListener('change', (e) => {
+      selectedRace = e.target.value;
+      persist();
+      renderSkills();
+      calculateShots();
+    });
 
     document.getElementById('grade').addEventListener('change', updateMonsterSelector);
     document.getElementById('monster').addEventListener('change', updateSelectedMonster);
 
     window.onload = () => {
       document.getElementById('grade').innerHTML = Object.keys(monsterData).map(g => `<option>${g}</option>`).join('');
+      document.getElementById('race').value = selectedRace;
       updateMonsterSelector();
     }
   </script>
