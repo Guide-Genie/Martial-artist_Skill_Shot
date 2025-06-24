@@ -202,7 +202,8 @@
             const skill = skills.find(s => s.id === id);
             if (skill) {
               const dmg = skill.damage[skillLevels[id] - 1];
-              slot.innerHTML = `<button class="remove-btn" onclick="this.parentElement.innerHTML=''; updateTimelineColor()">X</button><img src="${skill.img}"><div>${skill.name}</div><div class="damage-text">${dmg.toLocaleString()} 데미지</div>`;
+              slot.innerHTML = `<button class="remove-btn" onclick="this.parentElement.innerHTML=''; this.parentElement.removeAttribute('data-damage'); updateTimelineColor()">X</button>
+<img src="${skill.img}"><div>${skill.name}</div><div class="damage-text">${dmg.toLocaleString()} 데미지</div>`;
               slot.dataset.damage = dmg;
               updateTimelineColor();
             }
