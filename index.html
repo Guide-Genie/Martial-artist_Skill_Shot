@@ -18,7 +18,15 @@
       cursor: grab;
     }
     .slot { background: #3a3a3a; position: relative; }
-    .row-highlight { background: #33691E !important; color: #fff; }
+    .highlight {
+  background: linear-gradient(135deg, #d4edda, #a2d5ab);
+  color: #1b4d3e;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(162, 213, 171, 0.6);
+  font-weight: bold;
+  text-shadow: 0 0 1px #fff;
+  transition: background 0.3s, box-shadow 0.3s;
+}
     img { max-width: 40px; display: block; margin: 0 auto 5px; }
     .damage-text { margin-top: 5px; font-size: 0.9em; }
     .level-controls { display: flex; justify-content: center; gap: 5px; margin-top: 5px; }
@@ -222,8 +230,8 @@
         row.querySelectorAll(".slot").forEach(slot => {
           sum += parseInt(slot.dataset.damage || 0);
         });
-        if (sum >= hp) row.classList.add("row-highlight");
-        else row.classList.remove("row-highlight");
+        if (sum >= hp) row.classList.add("highlight");
+        else row.classList.remove("highlight");
 
         let display = row.querySelector(".total-damage");
         if (!display) {
