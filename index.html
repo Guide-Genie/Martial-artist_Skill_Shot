@@ -77,8 +77,16 @@
   <h1>🧱 무도가 스킬 시뮬레이터</h1>
 
   <div class="selector">
+    <label for="race">내 종족 선택: </label>
+    <select id="race">
+      <option value="포유류">포유류</option>
+      <option value="조류">조류</option>
+      <option value="파충류">파충류</option>
+    </select>
+
     <label for="grade">사냥터 등급 선택: </label>
     <select id="grade"></select>
+
     <label for="monster">몬스터 선택: </label>
     <select id="monster"></select>
   </div>
@@ -90,7 +98,7 @@
   <div id="resultArea"></div>
 
   <script>
-     const skills = [
+        const skills = [
   { id: 'magu', name: '마구때리기', race: '포유류', max: 10, img: 'images/magu.png', damage: [52137, 104274, 156411, 208548, 260685, 312822, 364959, 417096, 469233, 521370] },
   { id: 'yangson', name: '양손공격', race: '포유류', max: 10, img: 'images/yangson.png', damage: [20275, 40550, 60825, 81037, 101294, 121550, 141806, 162062, 182319, 202750] },
   { id: 'jiyeol', name: '지열참', race: '포유류', max: 10, img: 'images/jiyeol.png', damage: [162206, 324412, 486618, 648824, 811030, 973236, 1135442, 1297648, 1459854, 1622060] },
@@ -258,6 +266,7 @@ const monsterData = {
         const minus = document.createElement('button');
         minus.innerText = '-';
         minus.onclick = () => {
+          currentLevels[skill.id] = currentLevels[skill.id] || 0;
           if (currentLevels[skill.id] > 0) {
             currentLevels[skill.id]--;
             renderSkills();
@@ -268,8 +277,9 @@ const monsterData = {
         const plus = document.createElement('button');
         plus.innerText = '+';
         plus.onclick = () => {
+          currentLevels[skill.id] = currentLevels[skill.id] || 0;
           if (currentLevels[skill.id] < max) {
-            currentLevels[skill.id] = (currentLevels[skill.id] || 0) + 1;
+            currentLevels[skill.id]++;
             renderSkills();
             calculateShots();
           }
@@ -299,7 +309,7 @@ const monsterData = {
       }).filter(s => s.level > 0);
 
       const reusable = ['양손공격', '쪼기'];
-      const queue = [...skillsByDmg];
+      let queue = [...skillsByDmg];
       const output = [];
       let remainingHP = selectedMonster.hp;
       let shotCount = 1;
@@ -308,10 +318,9 @@ const monsterData = {
         let combo = [];
         let total = 0;
 
-        // 우선 쿨타임 짧은 스킬 재사용 허용
         for (let i = 0; i < queue.length; i++) {
           const skill = queue[i];
-          if (total + skill.damage <= remainingHP || skill.name === '양손공격' || skill.name === '쪼기') {
+          if (total + skill.damage <= remainingHP || reusable.includes(skill.name)) {
             combo.push(skill);
             total += skill.damage;
           }
@@ -320,8 +329,7 @@ const monsterData = {
         output.push(`샷 ${shotCount++}: ${combo.map(s => `${s.name}(${s.damage.toLocaleString()})`).join(' + ')} = 총 ${total.toLocaleString()} 데미지, 남은 HP: ${Math.max(remainingHP - total, 0).toLocaleString()}`);
         remainingHP -= total;
 
-        // 중복 제외
-        queue.splice(0);
+        queue = [];
         combo.forEach(skill => {
           if (reusable.includes(skill.name)) queue.push(skill);
         });
@@ -334,10 +342,15 @@ const monsterData = {
       resultArea.innerHTML = output.map(line => `<div>${line}</div>`).join('');
     }
 
+    document.getElementById('race').addEventListener('change', () => {
+      selectedRace = document.getElementById('race').value;
+      renderSkills();
+      calculateShots();
+    });
+
     document.getElementById('grade').addEventListener('change', updateMonsterSelector);
     document.getElementById('monster').addEventListener('change', updateSelectedMonster);
 
-    // 초기화
     window.onload = () => {
       document.getElementById('grade').innerHTML = Object.keys(monsterData).map(g => `<option>${g}</option>`).join('');
       updateMonsterSelector();
