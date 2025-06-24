@@ -10,97 +10,88 @@
       font-family: 'Noto Sans KR', sans-serif;
       padding: 20px;
     }
-    .skill-grid {
+    h1 {
+      font-size: 28px;
+      margin-bottom: 10px;
       display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-    .skill {
-      width: 80px;
-      background-color: #333;
-      border: 1px solid #555;
-      border-radius: 8px;
-      display: flex;
-      flex-direction: column;
       align-items: center;
-      padding: 6px;
-      box-shadow: 0 0 6px #000;
     }
-    .skill img {
-      width: 48px;
-      height: 48px;
-    }
-    .level-controls {
-      display: flex;
-      justify-content: center;
-      gap: 4px;
-    }
-    .level-controls button {
-      background: #666;
-      color: #fff;
-      border: none;
-      width: 24px;
-      height: 24px;
-      font-size: 14px;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    .level-display {
-      font-size: 13px;
-      margin: 2px 0;
-      text-align: center;
-      white-space: nowrap;
-    }
-    .skill-name {
-      font-size: 11px;
-      text-align: center;
-    }
-    .restricted {
-      color: orange;
+    h1::before {
+      content: '\1F9F1';
+      font-size: 32px;
+      margin-right: 10px;
     }
     .selector {
-      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
     }
     select {
       padding: 4px 8px;
       font-size: 14px;
     }
-    #resultArea {
-      margin-top: 20px;
-      font-size: 14px;
-      line-height: 1.8;
-    }
     #monsterHPDisplay {
-      margin-top: 10px;
       font-size: 16px;
       color: #ffcc00;
+      margin-bottom: 10px;
+    }
+    .skill-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .skill {
+      width: 90px;
+      background-color: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 6px;
+      padding: 8px;
+      text-align: center;
+    }
+    .skill img {
+      width: 48px;
+      height: 48px;
+    }
+    .skill-name {
+      font-size: 11px;
+      margin-top: 2px;
+    }
+    .level-display {
+      font-size: 12px;
+      margin: 4px 0;
+      white-space: nowrap;
+    }
+    .level-controls {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+    }
+    .level-controls button {
+      background: #555;
+      color: #fff;
+      border: none;
+      width: 26px;
+      height: 24px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    #resultArea {
+      font-size: 14px;
     }
   </style>
 </head>
 <body>
-  <h1>🧱 무도가 스킬 시뮬레이터</h1>
-
+  <h1>무도가 스킬 시뮬레이터</h1>
   <div class="selector">
-    <label for="race">종족 선택: </label>
-    <select id="race">
-      <option value="포유류">포유류</option>
-      <option value="조류">조류</option>
-      <option value="파충류">파충류</option>
-    </select>
-    &nbsp;&nbsp;
-    <label for="grade">사냥터 등급 선택: </label>
-    <select id="grade"></select>
-    <label for="monster">몬스터 선택: </label>
-    <select id="monster"></select>
+    <label>종족 선택: <select id="race"></select></label>
+    <label>사냥터 등급 선택: <select id="grade"></select></label>
+    <label>몬스터 선택: <select id="monster"></select></label>
   </div>
-
   <div id="monsterHPDisplay"></div>
-
   <div class="skill-grid" id="skillGrid"></div>
-
   <div id="resultArea"></div>
-
   <script>
             const skills = [
   { id: 'magu', name: '마구때리기', race: '포유류', max: 10, img: 'images/magu.png', damage: [52137, 104274, 156411, 208548, 260685, 312822, 364959, 417096, 469233, 521370] },
@@ -198,29 +189,39 @@ const monsterData = {
     { name: "어두운말미잘", hp: 9584672 }
   ]
 };
-
     const raceLimits = {
       '포유류': { '포유류': 10, '조류': 4, '파충류': 2 },
       '조류': { '포유류': 4, '조류': 10, '파충류': 2 },
       '파충류': { '포유류': 4, '조류': 4, '파충류': 10 }
     };
 
-    let selectedRace = localStorage.getItem('race') || '포유류';
-    let currentLevels = JSON.parse(localStorage.getItem('levels') || '{}');
+    let currentLevels = {};
+    let selectedRace = '포유류';
     let selectedMonster = null;
 
-    function updateMonsterSelector() {
+    function updateSelectors() {
+      const raceSelect = document.getElementById('race');
+      raceSelect.innerHTML = Object.keys(raceLimits).map(r => `<option value="${r}">${r}</option>`).join('');
+      raceSelect.value = selectedRace;
+      
       const gradeSelect = document.getElementById('grade');
+      gradeSelect.innerHTML = Object.keys(monsterData).map(g => `<option value="${g}">${g}</option>`).join('');
+
+      raceSelect.onchange = () => {
+        selectedRace = raceSelect.value;
+        renderSkills();
+        calculateShots();
+      };
+
+      gradeSelect.onchange = updateMonsterList;
+      document.getElementById('monster').onchange = updateSelectedMonster;
+    }
+
+    function updateMonsterList() {
+      const grade = document.getElementById('grade').value;
+      const monsters = monsterData[grade] || [];
       const monsterSelect = document.getElementById('monster');
-      monsterSelect.innerHTML = '';
-      const monsters = monsterData[gradeSelect.value] || [];
-      monsters.sort((a, b) => a.hp - b.hp);
-      monsters.forEach(m => {
-        const opt = document.createElement('option');
-        opt.value = m.name;
-        opt.text = m.name;
-        monsterSelect.appendChild(opt);
-      });
+      monsterSelect.innerHTML = monsters.map(m => `<option>${m.name}</option>`).join('');
       updateSelectedMonster();
     }
 
@@ -229,144 +230,90 @@ const monsterData = {
       const name = document.getElementById('monster').value;
       selectedMonster = monsterData[grade].find(m => m.name === name);
       document.getElementById('monsterHPDisplay').innerText = `📌 몬스터 체력: ${selectedMonster.hp.toLocaleString()} HP`;
-      renderSkills();
       calculateShots();
     }
 
     function renderSkills() {
-      const skillGrid = document.getElementById('skillGrid');
-      skillGrid.innerHTML = '';
+      const grid = document.getElementById('skillGrid');
+      grid.innerHTML = '';
       skills.forEach(skill => {
         const max = raceLimits[selectedRace][skill.race];
         const level = currentLevels[skill.id] || 0;
+        const box = document.createElement('div');
+        box.className = 'skill';
 
-        const skillBox = document.createElement('div');
-        skillBox.className = 'skill';
-
-        const img = document.createElement('img');
-        img.src = skill.img;
-        img.alt = skill.name;
-        skillBox.appendChild(img);
-
-        const name = document.createElement('div');
-        name.className = 'skill-name';
-        name.innerText = skill.name;
-        skillBox.appendChild(name);
-
-        const levelText = document.createElement('div');
-        levelText.className = 'level-display';
-        if (skill.race !== selectedRace) levelText.classList.add('restricted');
-        levelText.innerText = `${level}/${max}`;
-        skillBox.appendChild(levelText);
-
-        const damage = skill.damage[level - 1] || 0;
-        const dmgText = document.createElement('div');
-        dmgText.className = 'level-display';
-        dmgText.innerHTML = `데미지<br>${damage.toLocaleString()}`;
-        skillBox.appendChild(dmgText);
-
-        const controls = document.createElement('div');
-        controls.className = 'level-controls';
-
-        const minus = document.createElement('button');
-        minus.innerText = '-';
-        minus.onclick = () => {
-          if (currentLevels[skill.id] > 0) {
-            currentLevels[skill.id]--;
-            persist();
-            renderSkills();
-            calculateShots();
-          }
-        };
-
-        const plus = document.createElement('button');
-        plus.innerText = '+';
-        plus.onclick = () => {
-          if ((currentLevels[skill.id] || 0) < max) {
-            currentLevels[skill.id] = (currentLevels[skill.id] || 0) + 1;
-            persist();
-            renderSkills();
-            calculateShots();
-          }
-        };
-
-        controls.appendChild(minus);
-        controls.appendChild(plus);
-        skillBox.appendChild(controls);
-
-        skillGrid.appendChild(skillBox);
+        box.innerHTML = `
+          <img src="${skill.img}" alt="${skill.name}" />
+          <div class="skill-name">${skill.name}</div>
+          <div class="level-display">${level}/${max}</div>
+          <div class="level-display">${(skill.damage[level - 1] || 0).toLocaleString()}<br>데미지</div>
+          <div class="level-controls">
+            <button onclick="adjustLevel('${skill.id}', -1)">-</button>
+            <button onclick="adjustLevel('${skill.id}', 1)">+</button>
+          </div>
+        `;
+        grid.appendChild(box);
       });
+    }
+
+    function adjustLevel(id, delta) {
+      const skill = skills.find(s => s.id === id);
+      const max = raceLimits[selectedRace][skill.race];
+      currentLevels[id] = Math.max(0, Math.min((currentLevels[id] || 0) + delta, max));
+      localStorage.setItem('skillLevels', JSON.stringify(currentLevels));
+      renderSkills();
+      calculateShots();
     }
 
     function calculateShots() {
       const resultArea = document.getElementById('resultArea');
       if (!selectedMonster) return;
-
       const reusable = ['양손공격', '쪼기'];
-      const skillsByDmg = skills.map(s => {
-        const level = currentLevels[s.id] || 0;
+      const useCounts = {};
+      const queue = skills.map(s => {
+        const lvl = currentLevels[s.id] || 0;
         return {
-          id: s.id,
-          name: s.name,
-          damage: s.damage[level - 1] || 0,
-          level,
-          cooldown: s.cooldown || 9999
+          ...s,
+          level: lvl,
+          damage: s.damage[lvl - 1] || 0,
+          reusable: reusable.includes(s.name),
+          used: false
         };
       }).filter(s => s.level > 0);
 
-      const used = [];
-      let remainingHP = selectedMonster.hp;
-      let shotCount = 1;
-      let output = [];
+      let remaining = [...queue];
+      const shots = [];
+      const targetHP = selectedMonster.hp;
+      let maxReuse = 2;
 
-      while (remainingHP > 0) {
+      while (remaining.length) {
         let shot = [];
-        let total = 0;
-        let temp = [...skillsByDmg];
-        temp.sort((a, b) => b.damage - a.damage);
+        let sum = 0;
+        for (let i = 0; i < remaining.length; i++) {
+          const s = remaining[i];
+          if (sum + s.damage > targetHP) continue;
+          if (!s.reusable && s.used) continue;
+          if (s.reusable && (useCounts[s.id] || 0) >= maxReuse) continue;
 
-        for (let skill of temp) {
-          if (used.includes(skill.id) && !reusable.includes(skill.name)) continue;
-          if (total + skill.damage <= remainingHP || reusable.includes(skill.name)) {
-            shot.push(skill);
-            total += skill.damage;
-            if (!reusable.includes(skill.name)) used.push(skill.id);
-          }
-          if (total >= remainingHP) break;
+          shot.push(s);
+          sum += s.damage;
+          s.used = true;
+          if (s.reusable) useCounts[s.id] = (useCounts[s.id] || 0) + 1;
         }
-
-        output.push(`샷 ${shotCount++}: ${shot.map(s => `${s.name}(${s.damage.toLocaleString()})`).join(' + ')} = ${total.toLocaleString()} 데미지`);
-        remainingHP -= total;
         if (shot.length === 0) break;
+        shots.push(`샷 ${shots.length + 1}: ${shot.map(s => `${s.name}(${s.damage.toLocaleString()})`).join(' + ')} = 총 ${sum.toLocaleString()} 데미지`);
+        remaining = remaining.filter(s => !shot.includes(s) || s.reusable);
       }
 
-      if (remainingHP > 0) {
-        output.push(`🩸 남은 HP: ${remainingHP.toLocaleString()} — 스킬 부족`);
-      }
-
-      resultArea.innerHTML = output.map(line => `<div>${line}</div>`).join('');
+      resultArea.innerHTML = shots.join('<br>');
     }
-
-    function persist() {
-      localStorage.setItem('levels', JSON.stringify(currentLevels));
-      localStorage.setItem('race', selectedRace);
-    }
-
-    document.getElementById('race').addEventListener('change', (e) => {
-      selectedRace = e.target.value;
-      persist();
-      renderSkills();
-      calculateShots();
-    });
-
-    document.getElementById('grade').addEventListener('change', updateMonsterSelector);
-    document.getElementById('monster').addEventListener('change', updateSelectedMonster);
 
     window.onload = () => {
-      document.getElementById('grade').innerHTML = Object.keys(monsterData).map(g => `<option>${g}</option>`).join('');
-      document.getElementById('race').value = selectedRace;
-      updateMonsterSelector();
-    }
+      currentLevels = JSON.parse(localStorage.getItem('skillLevels') || '{}');
+      updateSelectors();
+      updateMonsterList();
+      renderSkills();
+    };
   </script>
 </body>
 </html>
