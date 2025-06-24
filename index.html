@@ -19,14 +19,13 @@
     }
     .slot { background: #3a3a3a; position: relative; }
     .highlight {
-  background: linear-gradient(135deg, #d4edda, #a2d5ab);
-  color: #1b4d3e;
-  border-radius: 8px;
-  box-shadow: 0 0 10px rgba(162, 213, 171, 0.6);
-  font-weight: bold;
-  text-shadow: 0 0 1px #fff;
-  transition: background 0.3s, box-shadow 0.3s;
-}
+      background: linear-gradient(135deg, #e0f8e9, #c5e7d6);
+      color: #1b4d3e;
+      border-radius: 8px;
+      box-shadow: 0 0 6px rgba(162, 213, 171, 0.5);
+      font-weight: bold;
+      transition: background 0.3s, box-shadow 0.3s;
+    }
     img { max-width: 40px; display: block; margin: 0 auto 5px; }
     .damage-text { margin-top: 5px; font-size: 0.9em; }
     .level-controls { display: flex; justify-content: center; gap: 5px; margin-top: 5px; }
@@ -70,10 +69,8 @@
     </label>
   </div>
   <div id="hpDisplay" style="margin-top:10px; font-size:1.2em; color: orange"></div>
-
   <h2>스킬 목록</h2>
   <div class="skill-container" id="skillList"></div>
-
   <h2>타임라인</h2>
   <div id="timelineContainer"></div>
 
@@ -84,39 +81,13 @@
       '파충류': { 'magu': 4, 'yangson': 4, 'jiyeol': 2, 'jjogi': 4, 'maeui': 4, 'wind': 2, 'tail': 10, 'claw': 10 }
     };
 
-       const monsterData = {
-  "A": [
-    { name: "촌촌", hp: 176798 },
-    { name: "가스", hp: 273385 },
-    { name: "에스코모이드", hp: 335914 },
-    { name: "오튜", hp: 413594 },
-    { name: "크라켄", hp: 440025 },
-    { name: "그렘린", hp: 451487 },
-    { name: "요오다", hp: 478211 },
-    { name: "부루마", hp: 518903 }
-  ],
-  "S": [
-    { name: "촌촌", hp: 993781 },
-    { name: "검은전갈", hp: 1685782 },
-    { name: "붉은그래브", hp: 2379253 },
-    { name: "붉은터틀", hp: 3090120 },
-    { name: "요오다", hp: 3186410 },
-    { name: "부루마", hp: 3652289 },
-    { name: "그렘린", hp: 4208420 },
-    { name: "붉은말미잘", hp: 4536507 }
-  ],
-  "SS": [
-    { name: "촌촌", hp: 4874967 },
-    { name: "보라전갈", hp: 5979141 },
-    { name: "푸른터틀", hp: 6093503 },
-    { name: "녹빛그래브", hp: 7004127 },
-    { name: "붉은말미잘", hp: 7542848 },
-    { name: "부루마", hp: 8119564 },
-    { name: "블루푸아", hp: 9042696 },
-    { name: "어두운말미잘", hp: 9584672 }
-  ]
-};
-            const skills = [
+    const monsterData = {
+      "A": [ { name: "촌촌", hp: 176798 }, { name: "가스", hp: 273385 }, { name: "에스코모이드", hp: 335914 }, { name: "오튜", hp: 413594 }, { name: "크라켄", hp: 440025 }, { name: "그렘린", hp: 451487 }, { name: "요오다", hp: 478211 }, { name: "부루마", hp: 518903 } ],
+      "S": [ { name: "촌촌", hp: 993781 }, { name: "검은전갈", hp: 1685782 }, { name: "붉은그래브", hp: 2379253 }, { name: "붉은터틀", hp: 3090120 }, { name: "요오다", hp: 3186410 }, { name: "부루마", hp: 3652289 }, { name: "그렘린", hp: 4208420 }, { name: "붉은말미잘", hp: 4536507 } ],
+      "SS": [ { name: "촌촌", hp: 4874967 }, { name: "보라전갈", hp: 5979141 }, { name: "푸른터틀", hp: 6093503 }, { name: "녹빛그래브", hp: 7004127 }, { name: "붉은말미잘", hp: 7542848 }, { name: "부루마", hp: 8119564 }, { name: "블루푸아", hp: 9042696 }, { name: "어두운말미잘", hp: 9584672 } ]
+    };
+
+     const skills = [
   {
     id: 'magu',
     name: '마구때리기',
@@ -200,7 +171,6 @@
       for (let r = 0; r < rows; r++) {
         const row = document.createElement("div");
         row.className = "timeline-row";
-        row.dataset.index = r;
         for (let i = 0; i < cols; i++) {
           const slot = document.createElement("div");
           slot.className = "slot";
@@ -210,8 +180,7 @@
             const skill = skills.find(s => s.id === id);
             if (skill) {
               const dmg = skill.damage[skillLevels[id] - 1];
-              slot.innerHTML = `<button class="remove-btn" onclick="this.parentElement.innerHTML=''; this.parentElement.removeAttribute('data-damage'); updateTimelineColor()">X</button>
-<img src="${skill.img}"><div>${skill.name}</div><div class="damage-text">${dmg.toLocaleString()} 데미지</div>`;
+              slot.innerHTML = `<button class="remove-btn" onclick="removeSkill(this)">X</button><img src="${skill.img}"><div>${skill.name}</div><div class="damage-text">${dmg.toLocaleString()} 데미지</div>`;
               slot.dataset.damage = dmg;
               updateTimelineColor();
             }
@@ -222,6 +191,13 @@
       }
     }
 
+    function removeSkill(button) {
+      const slot = button.parentElement;
+      slot.innerHTML = "";
+      slot.removeAttribute("data-damage");
+      updateTimelineColor();
+    }
+
     function updateTimelineColor() {
       const rows = timelineContainer.querySelectorAll(".timeline-row");
       const hp = selectedHP;
@@ -230,8 +206,7 @@
         row.querySelectorAll(".slot").forEach(slot => {
           sum += parseInt(slot.dataset.damage || 0);
         });
-        if (sum >= hp) row.classList.add("highlight");
-        else row.classList.remove("highlight");
+        row.classList.toggle("highlight", sum >= hp);
 
         let display = row.querySelector(".total-damage");
         if (!display) {
