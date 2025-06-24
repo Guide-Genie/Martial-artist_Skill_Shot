@@ -2,243 +2,187 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>무도가 스킬 조합계산기 _ by 곽진희</title>
+  <title>무도가 스킬 타임라인 조합기</title>
   <style>
-    body {
-      background-color: #1c1c1c;
-      color: #f0f0f0;
-      font-family: 'Noto Sans KR', sans-serif;
-      margin: 0;
-      padding: 20px;
+    body { background: #1e1e1e; color: #f0f0f0; font-family: 'Noto Sans KR', sans-serif; padding: 20px; }
+    h1 { color: #ff6600; }
+    select, input[type="number"], input[type="text"] { padding: 5px; margin: 5px; border-radius: 4px; border: none; }
+    .section { margin-bottom: 20px; }
+    .skill-list, .timeline { display: flex; flex-wrap: wrap; gap: 10px; }
+    .skill, .slot {
+      width: 120px; height: 100px; background: #333; border-radius: 8px; display: flex;
+      flex-direction: column; justify-content: center; align-items: center; padding: 5px;
     }
-    h1 {
-      font-size: 1.8em;
-      margin-bottom: 20px;
-      color: #ff6600;
-    }
-    .controls, .skills, .timeline {
-      margin-bottom: 20px;
-    }
-    select, input[type="text"] {
-      padding: 5px;
-      font-size: 14px;
-      margin-right: 10px;
-    }
-    .skill {
-      display: inline-block;
-      width: 120px;
-      padding: 10px;
-      margin: 5px;
-      background-color: #2b2b2b;
-      border-radius: 8px;
-      text-align: center;
-      cursor: grab;
-    }
-    .timeline-slot {
-      display: inline-block;
-      width: 120px;
-      height: 80px;
-      margin: 5px;
-      background-color: #333;
-      border-radius: 8px;
-      border: 2px dashed #555;
-      text-align: center;
-      vertical-align: top;
-      line-height: 80px;
-      color: #888;
-    }
-    .highlight {
-      background-color: #004400 !important;
-      border: 2px solid #00ff00;
-      color: #fff;
-    }
-    .level-controls {
-      display: flex;
-      justify-content: center;
-      gap: 5px;
-      margin-top: 5px;
-    }
-    .level-controls button {
-      background: #444;
-      color: #fff;
-      border: none;
-      padding: 2px 6px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    .damage-display {
-      font-size: 0.9em;
-      margin-top: 3px;
-    }
+    .skill img { width: 36px; height: 36px; margin-bottom: 5px; }
+    .skill.dragging { opacity: 0.5; }
+    .slot.highlight { border: 2px solid #00cc66; }
+    .level-controls { display: flex; gap: 5px; margin-top: 5px; }
+    .level-controls button { background: #666; color: white; border: none; width: 24px; height: 24px; border-radius: 4px; cursor: pointer; }
   </style>
 </head>
 <body>
-  <h1>무도가 스킬 조합계산기 _ by 곽진희</h1>
+  <h1>무도가 스킬 타임라인 조합기</h1>
 
-  <div class="controls">
-    <label>등급: 
-      <select id="rankSelect">
-        <option value="A">A</option>
-        <option value="S">S</option>
-        <option value="SS">SS</option>
-      </select>
-    </label>
-    <label>몬스터: 
-      <select id="monsterSelect"></select>
-    </label>
-    <label>수동 체력 입력: 
-      <input type="text" id="manualHp" placeholder="예: 176798">
-    </label>
+  <div class="section">
+    종족: 
+    <select id="raceSelect">
+      <option>전체</option>
+      <option>포유류</option>
+      <option>조류</option>
+      <option>파충류</option>
+    </select>
+
+    등급: 
+    <select id="gradeSelect"></select>
+
+    몬스터: 
+    <select id="monsterSelect"></select>
+
+    수동 체력 입력: 
+    <input type="text" id="manualHP" placeholder="예: 176798">
   </div>
 
-  <div id="monsterHpDisplay">몬스터 체력: 0 HP</div>
+  <div class="section">몬스터 체력: <span id="monsterHP">0</span> HP</div>
 
-  <div class="skills" id="skillList"></div>
+  <div class="section">
+    <strong>스킬 목록</strong>
+    <div class="skill-list" id="skillList"></div>
+  </div>
 
-  <div class="timeline" id="timeline"></div>
+  <div class="section">
+    <strong>타임라인</strong>
+    <div class="timeline" id="timeline"></div>
+    <div id="totalDamage">합계 데미지: 0</div>
+  </div>
 
   <script>
     const skills = [
-      { id: 'magu', name: '마구때리기', damage: [52137,104274,156411,208548,260685,312822,364959,417096,469233,521370] },
-      { id: 'yangson', name: '양손공격', damage: [20275,40550,60825,81037,101294,121550,141806,162062,182319,202750] },
-      { id: 'jiyeol', name: '지열참', damage: [162206,324412,486618,648824,811030,973236,1135442,1297648,1459854,1622060] },
-      { id: 'jjogi', name: '쪼기', damage: [22488,44972,67458,89942,112427,134913,157399,179885,202371,224857] },
-      { id: 'maeui', name: '매의위상', damage: [88269,176538,264807,353076,441345,529614,617883,706152,794421,882690] },
-      { id: 'wind', name: '윈드쉐이커', damage: [123576,247152,370728,494304,617880,741456,865032,988608,1112184,1235760] },
-      { id: 'tail', name: '꼬리치기', damage: [240680,477268,714579,950927,1188237,1424585,1661895,1898725,2135554,2371901] },
-      { id: 'claw', name: '할퀴기', damage: [102980,205857,308736,411612,514490,617368,720245,823123,926001,1028879] }
+      { id: 'magu', name: '마구때리기', race: '포유류', img: 'images/magu.png', max: 10, damage: [52137,104274,156411,208548,260685,312822,364959,417096,469233,521370] },
+      { id: 'yangson', name: '양손공격', race: '포유류', img: 'images/yangson.png', max: 10, damage: [20275,40550,60825,81037,101294,121550,141806,162062,182319,202750] },
+      { id: 'jiyeol', name: '지열참', race: '포유류', img: 'images/jiyeol.png', max: 10, damage: [162206,324412,486618,648824,811030,973236,1135442,1297648,1459854,1622060] },
+      { id: 'jjogi', name: '쪼기', race: '조류', img: 'images/jjogi.png', max: 10, damage: [22488,44972,67458,89942,112427,134913,157399,179885,202371,224857] },
+      { id: 'maeui', name: '매의위상', race: '조류', img: 'images/maeui.png', max: 10, damage: [88269,176538,264807,353076,441345,529614,617883,706152,794421,882690] },
+      { id: 'wind', name: '윈드쉐이커', race: '조류', img: 'images/wind.png', max: 10, damage: [123576,247152,370728,494304,617880,741456,865032,988608,1112184,1235760] },
+      { id: 'tail', name: '꼬리치기', race: '파충류', img: 'images/tail.png', max: 10, damage: [240680,477268,714579,950927,1188237,1424585,1661895,1898725,2135554,2371901] },
+      { id: 'claw', name: '할퀴기', race: '파충류', img: 'images/claw.png', max: 10, damage: [102980,205857,308736,411612,514490,617368,720245,823123,926001,1028879] }
     ];
 
     const monsterData = {
-      A: [
-        { name: '촌촌', hp: 176798 },
-        { name: '가스', hp: 273385 },
-        { name: '에스코모이드', hp: 335914 },
-        { name: '오튜', hp: 413594 },
-        { name: '크라켄', hp: 440025 },
-        { name: '요오다', hp: 478211 },
-        { name: '그렘린', hp: 451487 },
-        { name: '부루마', hp: 518903 }
+      "A": [
+        { name: "촌촌", hp: 176798 },
+        { name: "가스", hp: 273385 },
+        { name: "에스코모이드", hp: 335914 },
+        { name: "오튜", hp: 413594 },
+        { name: "크라켄", hp: 440025 },
+        { name: "요오다", hp: 478211 },
+        { name: "그렘린", hp: 451487 },
+        { name: "부루마", hp: 518903 }
       ]
     };
 
-    let skillLevels = {};
-    skills.forEach(skill => skillLevels[skill.id] = 1);
-
     const skillList = document.getElementById('skillList');
-    const rankSelect = document.getElementById('rankSelect');
-    const monsterSelect = document.getElementById('monsterSelect');
-    const manualHpInput = document.getElementById('manualHp');
-    const hpDisplay = document.getElementById('monsterHpDisplay');
     const timeline = document.getElementById('timeline');
+    const totalDamageDisplay = document.getElementById('totalDamage');
 
-    function updateMonsterList() {
-      const rank = rankSelect.value;
-      monsterSelect.innerHTML = '';
-      monsterData[rank].forEach(m => {
-        const opt = document.createElement('option');
-        opt.value = m.hp;
-        opt.textContent = m.name;
-        monsterSelect.appendChild(opt);
-      });
-      updateMonsterHp();
-    }
+    const monsterHP = document.getElementById('monsterHP');
+    const monsterSelect = document.getElementById('monsterSelect');
+    const gradeSelect = document.getElementById('gradeSelect');
+    const manualHP = document.getElementById('manualHP');
+    const raceSelect = document.getElementById('raceSelect');
 
-    function updateMonsterHp() {
-      const manualHp = parseInt(manualHpInput.value);
-      const selectedHp = parseInt(monsterSelect.value);
-      const hp = isNaN(manualHp) ? selectedHp : manualHp;
-      hpDisplay.innerHTML = `📌 몬스터 체력: ${hp.toLocaleString()} HP`;
-      timeline.setAttribute('data-target-hp', hp);
-      updateHighlight();
-    }
+    let timelineSkills = [];
 
-    function createSkillElement(skill) {
-      const el = document.createElement('div');
-      el.className = 'skill';
-      el.draggable = true;
-      el.dataset.skillId = skill.id;
-      el.textContent = `${skill.name}`;
-      const dmg = document.createElement('div');
-      dmg.className = 'damage-display';
-      dmg.textContent = `${skill.damage[skillLevels[skill.id]-1].toLocaleString()} 데미지`;
-      el.appendChild(dmg);
+    skills.forEach(skill => skill.level = 1);
 
-      const levelBox = document.createElement('div');
-      levelBox.className = 'level-controls';
-      const minus = document.createElement('button');
-      minus.textContent = '-';
-      minus.onclick = () => {
-        if (skillLevels[skill.id] > 1) {
-          skillLevels[skill.id]--;
-          refreshSkillList();
-        }
-      };
-      const plus = document.createElement('button');
-      plus.textContent = '+';
-      plus.onclick = () => {
-        if (skillLevels[skill.id] < 10) {
-          skillLevels[skill.id]++;
-          refreshSkillList();
-        }
-      };
-      levelBox.append(minus, plus);
-      el.appendChild(levelBox);
-      return el;
-    }
-
-    function refreshSkillList() {
+    function updateSkillList() {
       skillList.innerHTML = '';
+      const selectedRace = raceSelect.value;
+
       skills.forEach(skill => {
-        const el = createSkillElement(skill);
-        skillList.appendChild(el);
+        if (selectedRace !== '전체' && selectedRace !== skill.race) return;
+        const div = document.createElement('div');
+        div.className = 'skill';
+        div.draggable = true;
+        div.innerHTML = `
+          <img src="${skill.img}" alt="${skill.name}">
+          <div>${skill.name}</div>
+          <div>${skill.damage[skill.level - 1].toLocaleString()} 데미지</div>
+          <div class="level-controls">
+            <button onclick="adjustLevel('${skill.id}', -1)">-</button>
+            <span>${skill.level}</span>
+            <button onclick="adjustLevel('${skill.id}', 1)">+</button>
+          </div>
+        `;
+        div.addEventListener('dragstart', () => {
+          div.classList.add('dragging');
+          div.dataset.skillId = skill.id;
+        });
+        div.addEventListener('dragend', () => div.classList.remove('dragging'));
+        skillList.appendChild(div);
       });
     }
 
-    function createTimelineSlots() {
+    function adjustLevel(id, delta) {
+      const skill = skills.find(s => s.id === id);
+      if (!skill) return;
+      skill.level = Math.min(skill.max, Math.max(1, skill.level + delta));
+      updateSkillList();
+      renderTimeline();
+    }
+
+    function updateMonsterDropdown() {
+      gradeSelect.innerHTML = Object.keys(monsterData).map(g => `<option value="${g}">${g}</option>`).join('');
+      monsterSelect.innerHTML = '';
+      const grade = gradeSelect.value;
+      monsterData[grade]?.forEach(m => {
+        monsterSelect.innerHTML += `<option value="${m.name}">${m.name}</option>`;
+      });
+      updateMonsterHP();
+    }
+
+    function updateMonsterHP() {
+      const grade = gradeSelect.value;
+      const selected = monsterSelect.value;
+      const monster = monsterData[grade]?.find(m => m.name === selected);
+      const manual = parseInt(manualHP.value);
+      const hp = manual || (monster ? monster.hp : 0);
+      monsterHP.textContent = hp.toLocaleString();
+    }
+
+    function renderTimeline() {
       timeline.innerHTML = '';
-      for (let i = 0; i < 10; i++) {
-        const slot = document.createElement('div');
-        slot.className = 'timeline-slot';
-        slot.ondrop = handleDrop;
-        slot.ondragover = (e) => e.preventDefault();
-        timeline.appendChild(slot);
-      }
-    }
-
-    function handleDrop(e) {
-      e.preventDefault();
-      const skillId = e.dataTransfer.getData('text/plain');
-      const skill = skills.find(s => s.id === skillId);
-      const level = skillLevels[skill.id];
-      const dmg = skill.damage[level - 1];
-      this.textContent = `${skill.name}\n${dmg.toLocaleString()} 데미지`;
-      this.dataset.dmg = dmg;
-      updateHighlight();
-    }
-
-    function updateHighlight() {
-      const slots = timeline.querySelectorAll('.timeline-slot');
-      let total = 0;
-      const target = parseInt(timeline.dataset.targetHp || '0');
-      slots.forEach(slot => {
-        const dmg = parseInt(slot.dataset.dmg || '0');
-        total += dmg;
-        if (total >= target && !slot.classList.contains('highlight')) {
-          slot.classList.add('highlight');
-        } else {
-          slot.classList.remove('highlight');
-        }
+      let sum = 0;
+      timelineSkills.forEach(skill => {
+        const box = document.createElement('div');
+        box.className = 'slot';
+        box.innerHTML = `${skill.name}<br>${skill.damage.toLocaleString()} 데미지`;
+        timeline.appendChild(box);
+        sum += skill.damage;
       });
+      totalDamageDisplay.textContent = `합계 데미지: ${sum.toLocaleString()}`;
+      const targetHP = parseInt(monsterHP.textContent.replace(/,/g, ''));
+      if (sum >= targetHP) totalDamageDisplay.style.color = '#00cc66';
+      else totalDamageDisplay.style.color = 'white';
     }
 
-    rankSelect.onchange = updateMonsterList;
-    monsterSelect.onchange = updateMonsterHp;
-    manualHpInput.oninput = updateMonsterHp;
+    timeline.addEventListener('dragover', e => e.preventDefault());
+    timeline.addEventListener('drop', e => {
+      const id = document.querySelector('.dragging')?.dataset.skillId;
+      const skill = skills.find(s => s.id === id);
+      if (skill) {
+        timelineSkills.push({ ...skill, damage: skill.damage[skill.level - 1] });
+        renderTimeline();
+      }
+    });
 
-    refreshSkillList();
-    createTimelineSlots();
-    updateMonsterList();
+    manualHP.addEventListener('input', updateMonsterHP);
+    gradeSelect.addEventListener('change', updateMonsterDropdown);
+    monsterSelect.addEventListener('change', updateMonsterHP);
+    raceSelect.addEventListener('change', updateSkillList);
+
+    updateMonsterDropdown();
+    updateSkillList();
+    renderTimeline();
   </script>
 </body>
 </html>
