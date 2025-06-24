@@ -4,10 +4,26 @@
   <meta charset="UTF-8">
   <title>무도가 스킬 타임라인 조합기</title>
   <style>
-    body { background: #1e1e1e; color: #eee; font-family: 'Noto Sans KR', sans-serif; padding: 20px; }
-    h1 { font-size: 1.8em; color: #ff6600; }
-    select, input { padding: 5px; margin-right: 10px; }
-    .skill-container, .timeline-container { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px; }
+    body {
+      background: #1e1e1e;
+      color: #eee;
+      font-family: 'Noto Sans KR', sans-serif;
+      padding: 20px;
+    }
+    h1 {
+      font-size: 1.8em;
+      color: #ff6600;
+    }
+    select, input {
+      padding: 5px;
+      margin-right: 10px;
+    }
+    .skill-container, .timeline-container {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 15px;
+    }
     .skill, .slot {
       background: #2e2e2e;
       padding: 10px;
@@ -17,13 +33,36 @@
       min-height: 100px;
       cursor: grab;
     }
-    .slot { background: #3a3a3a; }
-    .highlight { background: #33691E; color: #fff; }
-    img { max-width: 40px; display: block; margin: 0 auto 5px; }
-    .damage-text { margin-top: 5px; font-size: 0.9em; }
-    .level-controls { display: flex; justify-content: center; gap: 5px; margin-top: 5px; }
-    .level-controls button { padding: 2px 8px; }
-    .total-damage { margin-top: 15px; font-size: 1.2em; font-weight: bold; }
+    .slot {
+      background: #3a3a3a;
+    }
+    .highlight {
+      background: #33691E;
+      color: #fff;
+    }
+    img {
+      max-width: 40px;
+      display: block;
+      margin: 0 auto 5px;
+    }
+    .damage-text {
+      margin-top: 5px;
+      font-size: 0.9em;
+    }
+    .level-controls {
+      display: flex;
+      justify-content: center;
+      gap: 5px;
+      margin-top: 5px;
+    }
+    .level-controls button {
+      padding: 2px 8px;
+    }
+    .total-damage {
+      margin-top: 15px;
+      font-size: 1.2em;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -77,7 +116,6 @@
       "S": [ { name: "촌촌", hp: 993781 }, { name: "검은전갈", hp: 1685782 }, { name: "붉은그래브", hp: 2379253 }, { name: "붉은터틀", hp: 3090120 }, { name: "요오다", hp: 3186410 }, { name: "부루마", hp: 3652289 }, { name: "그렘린", hp: 4208420 }, { name: "붉은말미잘", hp: 4536507 } ],
       "SS": [ { name: "촌촌", hp: 4874967 }, { name: "보라전갈", hp: 5979141 }, { name: "푸른터틀", hp: 6093503 }, { name: "녹빛그래브", hp: 7004127 }, { name: "붉은말미잘", hp: 7542848 }, { name: "부루마", hp: 8119564 }, { name: "블루푸아", hp: 9042696 }, { name: "어두운말미잘", hp: 9584672 } ]
     };
-
     const skillList = document.getElementById("skillList");
     const timeline = document.getElementById("timeline");
     const monsterSelect = document.getElementById("monsterSelect");
@@ -105,7 +143,7 @@
     function updateHP() {
       const manual = document.getElementById("manualHP").value;
       selectedHP = manual ? parseInt(manual) : parseInt(monsterSelect.value);
-      hpDisplay.textContent = `몬스터 체력: ${selectedHP.toLocaleString()} HP`;
+      hpDisplay.textContent = `모델 체력: ${selectedHP.toLocaleString()} HP`;
       updateTimelineColor();
     }
 
@@ -113,7 +151,13 @@
       skillList.innerHTML = "";
       const selectedRace = raceSelect.value;
       skills.forEach(skill => {
-        if (selectedRace !== "all" && skill.race !== selectedRace) return;
+        let maxLevel = skill.max;
+        if (selectedRace !== "all" && skill.race !== selectedRace) {
+          maxLevel = Math.floor(skill.max / 2);
+        }
+        const currentLevel = Math.min(skillLevels[skill.id], maxLevel);
+        skillLevels[skill.id] = currentLevel;
+
         const div = document.createElement("div");
         div.className = "skill";
         div.draggable = true;
@@ -121,11 +165,11 @@
         div.innerHTML = `
           <img src="${skill.img}"><br>
           ${skill.name}<br>
-          <div class="damage-text">${skill.damage[skillLevels[skill.id]-1].toLocaleString()} 데미지</div>
+          <div class="damage-text">${skill.damage[currentLevel - 1].toLocaleString()} 데미지</div>
           <div class="level-controls">
             <button onclick="changeLevel('${skill.id}', -1)">-</button>
-            <span>${skillLevels[skill.id]}</span>
-            <button onclick="changeLevel('${skill.id}', 1)">+</button>
+            <span>${currentLevel}</span>
+            <button onclick="changeLevel('${skill.id}', 1, '${selectedRace}', '${skill.race}', ${skill.max})">+</button>
           </div>
         `;
         div.addEventListener("dragstart", e => e.dataTransfer.setData("text/plain", skill.id));
@@ -133,8 +177,10 @@
       });
     }
 
-    function changeLevel(id, delta) {
-      skillLevels[id] = Math.max(1, Math.min(10, skillLevels[id] + delta));
+    function changeLevel(id, delta, selectedRace, skillRace, max) {
+      let limit = max;
+      if (selectedRace !== "all" && selectedRace !== skillRace) limit = Math.floor(max / 2);
+      skillLevels[id] = Math.max(1, Math.min(limit, skillLevels[id] + delta));
       updateSkillList();
     }
 
@@ -148,8 +194,9 @@
           const id = e.dataTransfer.getData("text/plain");
           const skill = skills.find(s => s.id === id);
           if (skill) {
-            slot.innerHTML = `<img src="${skill.img}"><div>${skill.name}</div><div class="damage-text">${skill.damage[skillLevels[id]-1].toLocaleString()} 데미지</div>`;
-            slot.dataset.damage = skill.damage[skillLevels[id]-1];
+            const dmg = skill.damage[skillLevels[id] - 1];
+            slot.innerHTML = `<img src="${skill.img}"><div>${skill.name}</div><div class="damage-text">${dmg.toLocaleString()} 데미지</div>`;
+            slot.dataset.damage = dmg;
             updateTimelineColor();
           }
         });
