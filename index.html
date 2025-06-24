@@ -11,87 +11,79 @@
       padding: 20px;
     }
     h1 {
-      font-size: 28px;
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-    }
-    h1::before {
-      content: '\1F9F1';
-      font-size: 32px;
-      margin-right: 10px;
+      color: #ff6600;
     }
     .selector {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-    select {
-      padding: 4px 8px;
-      font-size: 14px;
-    }
-    #monsterHPDisplay {
-      font-size: 16px;
-      color: #ffcc00;
       margin-bottom: 10px;
     }
     .skill-grid {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
+      gap: 10px;
       margin-bottom: 20px;
     }
     .skill {
       width: 90px;
-      background-color: #2a2a2a;
+      background-color: #333;
       border: 1px solid #444;
-      border-radius: 6px;
-      padding: 8px;
-      text-align: center;
+      border-radius: 5px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 5px;
     }
     .skill img {
       width: 48px;
       height: 48px;
     }
-    .skill-name {
-      font-size: 11px;
-      margin-top: 2px;
-    }
-    .level-display {
-      font-size: 12px;
-      margin: 4px 0;
-      white-space: nowrap;
-    }
     .level-controls {
       display: flex;
       justify-content: center;
-      gap: 6px;
+      gap: 4px;
+      margin-top: 2px;
     }
     .level-controls button {
       background: #555;
       color: #fff;
       border: none;
-      width: 26px;
+      width: 24px;
       height: 24px;
       font-size: 14px;
       cursor: pointer;
+      border-radius: 3px;
+    }
+    .level-display, .skill-name, .damage-display {
+      font-size: 12px;
+      text-align: center;
+    }
+    .restricted {
+      color: orange;
     }
     #resultArea {
+      margin-top: 20px;
       font-size: 14px;
+    }
+    #monsterHPDisplay {
+      margin-top: 10px;
+      font-size: 16px;
+      color: #ffcc00;
     }
   </style>
 </head>
 <body>
-  <h1>무도가 스킬 시뮬레이터</h1>
+  <h1>🧱 무도가 스킬 시뮬레이터</h1>
   <div class="selector">
-    <label>종족 선택: <select id="race"></select></label>
-    <label>사냥터 등급 선택: <select id="grade"></select></label>
-    <label>몬스터 선택: <select id="monster"></select></label>
+    <label for="race">종족 선택: </label>
+    <select id="race"></select>
+    <label for="grade">사냥터 등급 선택: </label>
+    <select id="grade"></select>
+    <label for="monster">몬스터 선택: </label>
+    <select id="monster"></select>
   </div>
   <div id="monsterHPDisplay"></div>
   <div class="skill-grid" id="skillGrid"></div>
   <div id="resultArea"></div>
+
   <script>
             const skills = [
   { id: 'magu', name: '마구때리기', race: '포유류', max: 10, img: 'images/magu.png', damage: [52137, 104274, 156411, 208548, 260685, 312822, 364959, 417096, 469233, 521370] },
@@ -195,41 +187,37 @@ const monsterData = {
       '파충류': { '포유류': 4, '조류': 4, '파충류': 10 }
     };
 
-    let currentLevels = {};
     let selectedRace = '포유류';
+    let currentLevels = JSON.parse(localStorage.getItem('skillLevels') || '{}');
     let selectedMonster = null;
 
-    function updateSelectors() {
-      const raceSelect = document.getElementById('race');
-      raceSelect.innerHTML = Object.keys(raceLimits).map(r => `<option value="${r}">${r}</option>`).join('');
-      raceSelect.value = selectedRace;
-      
-      const gradeSelect = document.getElementById('grade');
-      gradeSelect.innerHTML = Object.keys(monsterData).map(g => `<option value="${g}">${g}</option>`).join('');
-
-      raceSelect.onchange = () => {
-        selectedRace = raceSelect.value;
-        renderSkills();
-        calculateShots();
-      };
-
-      gradeSelect.onchange = updateMonsterList;
-      document.getElementById('monster').onchange = updateSelectedMonster;
+    function saveLevels() {
+      localStorage.setItem('skillLevels', JSON.stringify(currentLevels));
     }
 
-    function updateMonsterList() {
+    function updateSelectors() {
+      const raceSel = document.getElementById('race');
+      raceSel.innerHTML = ['포유류','조류','파충류'].map(r => `<option${selectedRace===r?' selected':''}>${r}</option>`).join('');
+      const gradeSel = document.getElementById('grade');
+      gradeSel.innerHTML = Object.keys(monsterData).map(g => `<option>${g}</option>`).join('');
+      updateMonsterSelector();
+    }
+
+    function updateMonsterSelector() {
       const grade = document.getElementById('grade').value;
+      const monsterSel = document.getElementById('monster');
       const monsters = monsterData[grade] || [];
-      const monsterSelect = document.getElementById('monster');
-      monsterSelect.innerHTML = monsters.map(m => `<option>${m.name}</option>`).join('');
+      monsters.sort((a,b)=>a.hp-b.hp);
+      monsterSel.innerHTML = monsters.map(m => `<option value="${m.name}">${m.name}</option>`).join('');
       updateSelectedMonster();
     }
 
     function updateSelectedMonster() {
       const grade = document.getElementById('grade').value;
       const name = document.getElementById('monster').value;
-      selectedMonster = monsterData[grade].find(m => m.name === name);
+      selectedMonster = (monsterData[grade] || []).find(m => m.name === name);
       document.getElementById('monsterHPDisplay').innerText = `📌 몬스터 체력: ${selectedMonster.hp.toLocaleString()} HP`;
+      renderSkills();
       calculateShots();
     }
 
@@ -239,81 +227,74 @@ const monsterData = {
       skills.forEach(skill => {
         const max = raceLimits[selectedRace][skill.race];
         const level = currentLevels[skill.id] || 0;
+
         const box = document.createElement('div');
         box.className = 'skill';
-
         box.innerHTML = `
           <img src="${skill.img}" alt="${skill.name}" />
           <div class="skill-name">${skill.name}</div>
-          <div class="level-display">${level}/${max}</div>
-          <div class="level-display">${(skill.damage[level - 1] || 0).toLocaleString()}<br>데미지</div>
+          <div class="level-display ${skill.race !== selectedRace ? 'restricted' : ''}">${level}/${max}</div>
+          <div class="damage-display">${(skill.damage[level - 1] || 0).toLocaleString()} 데미지</div>
           <div class="level-controls">
-            <button onclick="adjustLevel('${skill.id}', -1)">-</button>
-            <button onclick="adjustLevel('${skill.id}', 1)">+</button>
+            <button onclick="changeLevel('${skill.id}', -1)">-</button>
+            <button onclick="changeLevel('${skill.id}', 1)">+</button>
           </div>
         `;
         grid.appendChild(box);
       });
     }
 
-    function adjustLevel(id, delta) {
+    function changeLevel(id, delta) {
       const skill = skills.find(s => s.id === id);
       const max = raceLimits[selectedRace][skill.race];
-      currentLevels[id] = Math.max(0, Math.min((currentLevels[id] || 0) + delta, max));
-      localStorage.setItem('skillLevels', JSON.stringify(currentLevels));
-      renderSkills();
-      calculateShots();
+      const val = (currentLevels[id] || 0) + delta;
+      if (val >= 0 && val <= max) {
+        currentLevels[id] = val;
+        saveLevels();
+        renderSkills();
+        calculateShots();
+      }
     }
 
     function calculateShots() {
       const resultArea = document.getElementById('resultArea');
       if (!selectedMonster) return;
-      const reusable = ['양손공격', '쪼기'];
-      const useCounts = {};
-      const queue = skills.map(s => {
-        const lvl = currentLevels[s.id] || 0;
-        return {
-          ...s,
-          level: lvl,
-          damage: s.damage[lvl - 1] || 0,
-          reusable: reusable.includes(s.name),
-          used: false
-        };
-      }).filter(s => s.level > 0);
 
-      let remaining = [...queue];
-      const shots = [];
-      const targetHP = selectedMonster.hp;
-      let maxReuse = 2;
+      let available = skills.map(s => {
+        const level = currentLevels[s.id] || 0;
+        return { id: s.id, name: s.name, damage: s.damage[level - 1] || 0, usable: level > 0, used: 0, repeat: ['양손공격','쪼기'].includes(s.name) ? 2 : 1 };
+      }).filter(s => s.usable);
 
-      while (remaining.length) {
-        let shot = [];
+      let monsterHP = selectedMonster.hp;
+      const result = [];
+
+      while (available.some(s => s.used < s.repeat)) {
+        let combo = [];
         let sum = 0;
-        for (let i = 0; i < remaining.length; i++) {
-          const s = remaining[i];
-          if (sum + s.damage > targetHP) continue;
-          if (!s.reusable && s.used) continue;
-          if (s.reusable && (useCounts[s.id] || 0) >= maxReuse) continue;
-
-          shot.push(s);
-          sum += s.damage;
-          s.used = true;
-          if (s.reusable) useCounts[s.id] = (useCounts[s.id] || 0) + 1;
+        for (let skill of available) {
+          if (skill.used < skill.repeat) {
+            combo.push(skill);
+            sum += skill.damage;
+            skill.used++;
+            if (sum >= monsterHP) break;
+          }
         }
-        if (shot.length === 0) break;
-        shots.push(`샷 ${shots.length + 1}: ${shot.map(s => `${s.name}(${s.damage.toLocaleString()})`).join(' + ')} = 총 ${sum.toLocaleString()} 데미지`);
-        remaining = remaining.filter(s => !shot.includes(s) || s.reusable);
+        if (combo.length === 0) break;
+        result.push(`샷 ${result.length+1}: ` + combo.map(s => `${s.name}(${s.damage.toLocaleString()})`).join(' + ') + ` = 총 ${sum.toLocaleString()} 데미지`);
       }
 
-      resultArea.innerHTML = shots.join('<br>');
+      resultArea.innerHTML = result.map(r => `<div>${r}</div>`).join('');
     }
 
-    window.onload = () => {
-      currentLevels = JSON.parse(localStorage.getItem('skillLevels') || '{}');
-      updateSelectors();
-      updateMonsterList();
+    document.getElementById('race').addEventListener('change', e => {
+      selectedRace = e.target.value;
       renderSkills();
-    };
+      calculateShots();
+    });
+    document.getElementById('grade').addEventListener('change', updateMonsterSelector);
+    document.getElementById('monster').addEventListener('change', updateSelectedMonster);
+
+    window.onload = updateSelectors;
   </script>
 </body>
 </html>
