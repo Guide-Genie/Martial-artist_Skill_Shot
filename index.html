@@ -5,104 +5,87 @@
   <title>무도가 스킬 시뮬레이터</title>
   <style>
     body {
-      background-color: #1c1c1c;
+      background: #1e1e1e;
       color: #eee;
       font-family: 'Noto Sans KR', sans-serif;
-      padding: 20px;
+      padding: 30px;
     }
-    h1 { font-size: 24px; margin-bottom: 20px; }
-    .selectors {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 15px;
+    h1 {
+      font-size: 2em;
+      color: orange;
+      margin-bottom: 10px;
     }
-    select {
-      padding: 5px 10px;
-      font-size: 14px;
-    }
-    .skill-grid {
+    .dropdowns, .skills {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
       margin-bottom: 20px;
     }
-    .skill {
-      width: 90px;
-      background-color: #333;
-      border: 1px solid #444;
-      border-radius: 6px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 6px;
+    .skill-card {
+      background: #2a2a2a;
+      border-radius: 10px;
+      padding: 10px;
+      text-align: center;
+      min-width: 100px;
     }
-    .skill img {
+    .skill-card img {
       width: 48px;
       height: 48px;
     }
-    .level-controls {
-      display: flex;
-      justify-content: center;
-      gap: 5px;
+    .damage {
+      font-size: 0.9em;
+      margin: 5px 0;
+      white-space: pre-line;
     }
-    .level-controls button {
-      background: #555;
+    .button-group button {
+      background: #444;
       color: #fff;
       border: none;
-      width: 24px;
-      height: 24px;
-      font-size: 14px;
+      margin: 0 3px;
+      padding: 5px 10px;
+      font-size: 0.9em;
       cursor: pointer;
-      border-radius: 3px;
+      border-radius: 5px;
     }
-    .level-display {
-      font-size: 12px;
-      margin: 4px 0;
+    select {
+      padding: 5px;
+      background: #333;
+      color: #fff;
+      border-radius: 5px;
+      border: 1px solid #666;
     }
-    .skill-name {
-      font-size: 11px;
-      text-align: center;
-      margin-top: 4px;
+    .output {
+      background: #111;
+      padding: 15px;
+      border-radius: 10px;
+      margin-top: 15px;
+      white-space: pre-line;
     }
-    .restricted {
-      color: orange;
-    }
-    #monsterHPDisplay {
-      margin: 10px 0;
-      font-size: 16px;
-      color: #ffcc00;
-    }
-    #resultArea {
-      font-size: 14px;
-      margin-top: 10px;
-      white-space: pre-wrap;
+    .highlight {
+      color: gold;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
-  <h1>🧱 무도가 스킬 시뮬레이터</h1>
-
-  <div class="selectors">
-    <label for="race">종족 선택: </label>
-    <select id="race">
-      <option value="포유류">포유류</option>
-      <option value="조류">조류</option>
-      <option value="파충류">파충류</option>
-    </select>
-
-    <label for="grade">사냥터 등급: </label>
-    <select id="grade"></select>
-
-    <label for="monster">몬스터 선택: </label>
-    <select id="monster"></select>
+  <h1>📦 무도가 스킬 시뮬레이터</h1>
+  <div class="dropdowns">
+    <label>종족 선택: 
+      <select id="raceSelect"></select>
+    </label>
+    <label>사냥터 등급: 
+      <select id="gradeSelect"></select>
+    </label>
+    <label>몬스터 선택: 
+      <select id="monsterSelect"></select>
+    </label>
   </div>
-
-  <div id="monsterHPDisplay"></div>
-  <div class="skill-grid" id="skillGrid"></div>
-  <div id="resultArea"></div>
+  <div id="monsterHpDisplay" class="highlight"></div>
+  <div class="skills" id="skillsContainer"></div>
+  <div class="output" id="resultArea"></div>
 
   <script>
-        const skills = [
+         const skills = [
   { id: 'magu', name: '마구때리기', race: '포유류', max: 10, img: 'images/magu.png', damage: [52137, 104274, 156411, 208548, 260685, 312822, 364959, 417096, 469233, 521370] },
   { id: 'yangson', name: '양손공격', race: '포유류', max: 10, img: 'images/yangson.png', damage: [20275, 40550, 60825, 81037, 101294, 121550, 141806, 162062, 182319, 202750] },
   { id: 'jiyeol', name: '지열참', race: '포유류', max: 10, img: 'images/jiyeol.png', damage: [162206, 324412, 486618, 648824, 811030, 973236, 1135442, 1297648, 1459854, 1622060] },
@@ -146,144 +129,140 @@ const monsterData = {
   ]
 };
 
-    const raceLimits = {
-      '포유류': { '포유류': 10, '조류': 4, '파충류': 2 },
-      '조류': { '포유류': 4, '조류': 10, '파충류': 2 },
-      '파충류': { '포유류': 4, '조류': 4, '파충류': 10 }
+    const cooldowns = {
+      jiyeol: 34, tail: 28, wind: 22, maeui: 16,
+      claw: 12, magu: 10, yangson: 4, jjogi: 4
     };
 
-    let selectedRace = localStorage.getItem('selectedRace') || '포유류';
-    let currentLevels = JSON.parse(localStorage.getItem('skillLevels') || '{}');
-    let selectedMonster = null;
+    let selectedSkills = {};
+    let race = localStorage.getItem('race') || '조류';
+    let grade = localStorage.getItem('grade') || 'A';
+    let monster = localStorage.getItem('monster') || '촌촌';
 
-    function updateMonsterSelector() {
-      const grade = document.getElementById('grade').value;
-      const monsterSelect = document.getElementById('monster');
-      monsterSelect.innerHTML = '';
-      (monsterData[grade] || []).sort((a, b) => a.hp - b.hp).forEach(m => {
+    const raceSelect = document.getElementById('raceSelect');
+    const gradeSelect = document.getElementById('gradeSelect');
+    const monsterSelect = document.getElementById('monsterSelect');
+
+    const monsterHpDisplay = document.getElementById('monsterHpDisplay');
+    const skillsContainer = document.getElementById('skillsContainer');
+    const resultArea = document.getElementById('resultArea');
+
+    function populateDropdown(select, values, currentValue) {
+      select.innerHTML = '';
+      values.forEach(v => {
         const opt = document.createElement('option');
-        opt.value = m.name;
-        opt.text = m.name;
-        monsterSelect.appendChild(opt);
+        opt.value = v;
+        opt.textContent = v;
+        if (v === currentValue) opt.selected = true;
+        select.appendChild(opt);
       });
-      updateSelectedMonster();
     }
 
-    function updateSelectedMonster() {
-      const grade = document.getElementById('grade').value;
-      const name = document.getElementById('monster').value;
-      selectedMonster = (monsterData[grade] || []).find(m => m.name === name);
-      document.getElementById('monsterHPDisplay').innerText = `📌 몬스터 체력: ${selectedMonster?.hp.toLocaleString()} HP`;
-      renderSkills();
-      calculateShots();
+    function updateMonsterList() {
+      const monsters = monsterData[grade] ? monsterData[grade].filter(m => skills.some(s => s.race === race)) : [];
+      populateDropdown(monsterSelect, monsters.map(m => m.name), monster);
+      updateMonsterHp();
+    }
+
+    function updateMonsterHp() {
+      const data = monsterData[grade]?.find(m => m.name === monster);
+      if (data) monsterHpDisplay.textContent = `몬스터 체력: ${data.hp.toLocaleString()} HP`;
     }
 
     function renderSkills() {
-      const grid = document.getElementById('skillGrid');
-      grid.innerHTML = '';
-      skills.forEach(skill => {
-        const max = raceLimits[selectedRace][skill.race];
-        const level = currentLevels[skill.id] || 0;
-        const damage = skill.damage[level - 1] || 0;
+      skillsContainer.innerHTML = '';
+      skills.filter(s => s.race === race).forEach(skill => {
+        const level = selectedSkills[skill.id] || 0;
+        const dmg = skill.damage[level - 1] || 0;
 
         const div = document.createElement('div');
-        div.className = 'skill';
-
-        const img = document.createElement('img');
-        img.src = skill.img;
-        div.appendChild(img);
-
-        const name = document.createElement('div');
-        name.className = 'skill-name';
-        name.innerText = skill.name;
-        div.appendChild(name);
-
-        const lvlDisplay = document.createElement('div');
-        lvlDisplay.className = 'level-display';
-        if (skill.race !== selectedRace) lvlDisplay.classList.add('restricted');
-        lvlDisplay.innerText = `${level}/${max}`;
-        div.appendChild(lvlDisplay);
-
-        const dmg = document.createElement('div');
-        dmg.className = 'level-display';
-        dmg.innerText = `\n${damage.toLocaleString()} 데미지`;
-        div.appendChild(dmg);
-
-        const controls = document.createElement('div');
-        controls.className = 'level-controls';
-        ['-', '+'].forEach(op => {
-          const btn = document.createElement('button');
-          btn.innerText = op;
-          btn.onclick = () => {
-            if (op === '+' && level < max) currentLevels[skill.id] = level + 1;
-            if (op === '-' && level > 0) currentLevels[skill.id] = level - 1;
-            localStorage.setItem('skillLevels', JSON.stringify(currentLevels));
-            renderSkills();
-            calculateShots();
-          };
-          controls.appendChild(btn);
-        });
-        div.appendChild(controls);
-        grid.appendChild(div);
+        div.className = 'skill-card';
+        div.innerHTML = `
+          <img src="${skill.img}" alt="${skill.name}"><br>
+          ${skill.name} <br>
+          <span class="damage">${level}/10\n${dmg.toLocaleString()} 데미지</span>
+          <div class="button-group">
+            <button onclick="changeLevel('${skill.id}', -1)">-</button>
+            <button onclick="changeLevel('${skill.id}', 1)">+</button>
+          </div>
+        `;
+        skillsContainer.appendChild(div);
       });
     }
 
-    function calculateShots() {
-      const result = document.getElementById('resultArea');
-      result.innerHTML = '';
-      if (!selectedMonster) return;
-
-      const allSkills = skills
-        .map(s => {
-          const lvl = currentLevels[s.id] || 0;
-          return { ...s, level: lvl, damage: s.damage[lvl - 1] || 0 };
-        })
-        .filter(s => s.level > 0);
-
-      const reusable = ['양손공격', '쪼기'];
-      const used = [];
-      let hp = selectedMonster.hp;
-      let shots = [];
-      let shotNum = 1;
-
-      while (hp > 0) {
-        let combo = [];
-        let total = 0;
-
-        for (let i = 0; i < allSkills.length; i++) {
-          const skill = allSkills[i];
-          if (used.includes(skill.id) && !reusable.includes(skill.name)) continue;
-          if (total + skill.damage > hp && !reusable.includes(skill.name)) continue;
-
-          combo.push(skill);
-          total += skill.damage;
-          if (!reusable.includes(skill.name)) used.push(skill.id);
-          if (total >= hp) break;
-        }
-
-        shots.push(`샷 ${shotNum++}: ` + combo.map(s => `${s.name}(${s.damage.toLocaleString()})`).join(' + ') + ` = 총 ${total.toLocaleString()} 데미지`);
-        hp -= total;
-        if (combo.length === 0) break;
-      }
-
-      if (hp > 0) shots.push(`🩸 남은 체력: ${hp.toLocaleString()} — 스킬 부족`);
-      result.innerText = shots.join('\n');
-    }
-
-    document.getElementById('grade').addEventListener('change', updateMonsterSelector);
-    document.getElementById('monster').addEventListener('change', updateSelectedMonster);
-    document.getElementById('race').addEventListener('change', () => {
-      selectedRace = document.getElementById('race').value;
-      localStorage.setItem('selectedRace', selectedRace);
+    function changeLevel(id, delta) {
+      selectedSkills[id] = Math.max(0, Math.min(10, (selectedSkills[id] || 0) + delta));
+      localStorage.setItem('skills', JSON.stringify(selectedSkills));
       renderSkills();
       calculateShots();
-    });
+    }
 
-    window.onload = () => {
-      document.getElementById('race').value = selectedRace;
-      document.getElementById('grade').innerHTML = Object.keys(monsterData).map(g => `<option>${g}</option>`).join('');
-      updateMonsterSelector();
+    function calculateShots() {
+      resultArea.textContent = '';
+      const monsterHp = monsterData[grade]?.find(m => m.name === monster)?.hp || 1;
+      let available = [];
+      for (const s of skills) {
+        const lv = selectedSkills[s.id] || 0;
+        if (lv > 0 && s.race === race) {
+          const dmg = s.damage[lv - 1];
+          available.push({ id: s.id, name: s.name, dmg, cd: cooldowns[s.id] });
+        }
+      }
+
+      available.sort((a, b) => b.dmg - a.dmg);
+
+      let timeline = [], used = new Set();
+      while (available.length) {
+        let shot = [], total = 0;
+        for (const skill of available) {
+          if (!used.has(skill.id) || skill.cd <= 4) {
+            if (total + skill.dmg <= monsterHp || shot.length === 0) {
+              shot.push(skill);
+              total += skill.dmg;
+              if (skill.cd > 4) used.add(skill.id);
+            }
+          }
+        }
+        if (!shot.length) break;
+        timeline.push({ shot, total });
+      }
+
+      timeline.forEach((line, i) => {
+        const combo = line.shot.map(s => `${s.name}(${s.dmg.toLocaleString()})`).join(' + ');
+        resultArea.textContent += `샷 ${i + 1}: ${combo} = 총 ${line.total.toLocaleString()} 데미지\n`;
+      });
+    }
+
+    function init() {
+      populateDropdown(raceSelect, [...new Set(skills.map(s => s.race))], race);
+      populateDropdown(gradeSelect, Object.keys(monsterData).filter(g => ['A', 'S', 'SS'].includes(g)), grade);
+      selectedSkills = JSON.parse(localStorage.getItem('skills') || '{}');
+      updateMonsterList();
+      renderSkills();
+      calculateShots();
+    }
+
+    raceSelect.onchange = () => {
+      race = raceSelect.value;
+      localStorage.setItem('race', race);
+      updateMonsterList();
+      renderSkills();
+      calculateShots();
     };
+    gradeSelect.onchange = () => {
+      grade = gradeSelect.value;
+      localStorage.setItem('grade', grade);
+      updateMonsterList();
+      calculateShots();
+    };
+    monsterSelect.onchange = () => {
+      monster = monsterSelect.value;
+      localStorage.setItem('monster', monster);
+      updateMonsterHp();
+      calculateShots();
+    };
+
+    window.onload = init;
   </script>
 </body>
 </html>
