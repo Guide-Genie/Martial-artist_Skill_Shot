@@ -7,7 +7,7 @@
     body { background: #1e1e1e; color: #eee; font-family: 'Noto Sans KR', sans-serif; padding: 20px; }
     h1 { font-size: 1.8em; color: #ff6600; }
     select, input { padding: 5px; margin-right: 10px; }
-    .skill-container, .timeline-container { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px; }
+    .skill-container, .timeline-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px; }
     .skill, .slot {
       background: #2e2e2e;
       padding: 10px;
@@ -18,12 +18,12 @@
       cursor: grab;
     }
     .slot { background: #3a3a3a; position: relative; }
-    .highlight { background: #33691E; color: #fff; }
+    .row-highlight { background: #33691E !important; color: #fff; }
     img { max-width: 40px; display: block; margin: 0 auto 5px; }
     .damage-text { margin-top: 5px; font-size: 0.9em; }
     .level-controls { display: flex; justify-content: center; gap: 5px; margin-top: 5px; }
     .level-controls button { padding: 2px 8px; }
-    .total-damage { margin-top: 15px; font-size: 1.2em; font-weight: bold; }
+    .total-damage { margin-top: 10px; font-size: 1em; font-weight: bold; }
     .remove-btn {
       position: absolute;
       top: 3px;
@@ -68,7 +68,6 @@
 
   <h2>타임라인</h2>
   <div id="timelineContainer"></div>
-  <div id="totalDamageDisplay" class="total-damage"></div>
 
   <script>
     const allowedLevels = {
@@ -77,7 +76,7 @@
       '파충류': { 'magu': 4, 'yangson': 4, 'jiyeol': 2, 'jjogi': 4, 'maeui': 4, 'wind': 2, 'tail': 10, 'claw': 10 }
     };
 
-    const monsterData = {
+       const monsterData = {
   "A": [
     { name: "촌촌", hp: 176798 },
     { name: "가스", hp: 273385 },
@@ -109,36 +108,7 @@
     { name: "어두운말미잘", hp: 9584672 }
   ]
 };
-
-
-    const timelineContainer = document.getElementById("timelineContainer");
-
-    function createMultiTimeline(rows = 4, cols = 5) {
-      timelineContainer.innerHTML = "";
-      for (let r = 0; r < rows; r++) {
-        const row = document.createElement("div");
-        row.className = "timeline-container";
-        for (let i = 0; i < cols; i++) {
-          const slot = document.createElement("div");
-          slot.className = "slot";
-          slot.addEventListener("dragover", e => e.preventDefault());
-          slot.addEventListener("drop", e => {
-            const id = e.dataTransfer.getData("text/plain");
-            const skill = skills.find(s => s.id === id);
-            if (skill) {
-              const dmg = skill.damage[skillLevels[id] - 1];
-              slot.innerHTML = `<button class="remove-btn" onclick="this.parentElement.innerHTML=''; updateTimelineColor()">X</button><img src="${skill.img}"><div>${skill.name}</div><div class="damage-text">${dmg.toLocaleString()} 데미지</div>`;
-              slot.dataset.damage = dmg;
-              updateTimelineColor();
-            }
-          });
-          row.appendChild(slot);
-        }
-        timelineContainer.appendChild(row);
-      }
-    }
-
-        const skills = [
+            const skills = [
   {
     id: 'magu',
     name: '마구때리기',
@@ -215,6 +185,55 @@
     const skillLevels = {};
     skills.forEach(s => skillLevels[s.id] = 1);
 
+    const timelineContainer = document.getElementById("timelineContainer");
+
+    function createMultiTimeline(rows = 4, cols = 5) {
+      timelineContainer.innerHTML = "";
+      for (let r = 0; r < rows; r++) {
+        const row = document.createElement("div");
+        row.className = "timeline-row";
+        row.dataset.index = r;
+        for (let i = 0; i < cols; i++) {
+          const slot = document.createElement("div");
+          slot.className = "slot";
+          slot.addEventListener("dragover", e => e.preventDefault());
+          slot.addEventListener("drop", e => {
+            const id = e.dataTransfer.getData("text/plain");
+            const skill = skills.find(s => s.id === id);
+            if (skill) {
+              const dmg = skill.damage[skillLevels[id] - 1];
+              slot.innerHTML = `<button class="remove-btn" onclick="this.parentElement.innerHTML=''; updateTimelineColor()">X</button><img src="${skill.img}"><div>${skill.name}</div><div class="damage-text">${dmg.toLocaleString()} 데미지</div>`;
+              slot.dataset.damage = dmg;
+              updateTimelineColor();
+            }
+          });
+          row.appendChild(slot);
+        }
+        timelineContainer.appendChild(row);
+      }
+    }
+
+    function updateTimelineColor() {
+      const rows = timelineContainer.querySelectorAll(".timeline-row");
+      const hp = selectedHP;
+      rows.forEach(row => {
+        let sum = 0;
+        row.querySelectorAll(".slot").forEach(slot => {
+          sum += parseInt(slot.dataset.damage || 0);
+        });
+        if (sum >= hp) row.classList.add("row-highlight");
+        else row.classList.remove("row-highlight");
+
+        let display = row.querySelector(".total-damage");
+        if (!display) {
+          display = document.createElement("div");
+          display.className = "total-damage";
+          row.appendChild(display);
+        }
+        display.textContent = `합계 데미지: ${sum.toLocaleString()} / ${hp.toLocaleString()} HP`;
+      });
+    }
+
     function updateMonsterList() {
       const grade = gradeSelect.value;
       monsterSelect.innerHTML = "";
@@ -265,18 +284,6 @@
       const max = allowedLevels[race][id];
       skillLevels[id] = Math.max(1, Math.min(max, skillLevels[id] + delta));
       updateSkillList();
-    }
-
-    function updateTimelineColor() {
-      const allSlots = timelineContainer.querySelectorAll(".slot");
-      let total = 0;
-      allSlots.forEach(slot => {
-        const dmg = parseInt(slot.dataset.damage || 0);
-        total += dmg;
-      });
-      totalDamageDisplay.textContent = `합계 데미지: ${total.toLocaleString()} / ${selectedHP.toLocaleString()} HP`;
-      if (total >= selectedHP) totalDamageDisplay.classList.add("highlight");
-      else totalDamageDisplay.classList.remove("highlight");
     }
 
     const gradeSelect = document.getElementById("gradeSelect");
